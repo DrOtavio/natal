@@ -448,3 +448,18 @@
 @media (prefers-reduced-motion: reduce) {
   .reveal-confetti { display: none; }
 }
+
+
+/* Os convites ficam acessíveis junto de cada participante também no celular. */
+.participant-actions .button-whatsapp {
+  border: 1px solid #5ca27352;
+  color: #f4fff5;
+  background: linear-gradient(120deg, #1d754c 0%, #136239 55%, #0d4e31 100%);
+  box-shadow: 0 4px 17px #0d704c26, inset 0 1px 0 #ffffff1d;
+}
+@media (max-width: 767px) {
+  .participant-actions { display: flex; flex-wrap: wrap; width: 100%; gap: 10px; }
+  .participant-actions .button-whatsapp { order: -1; flex: 1 1 100%; width: 100%; min-height: 50px; font-size: 13px; }
+  .participant-actions .button-secondary { flex: 1 1 calc(50% - 10px); }
+  .invite-actions .button-whatsapp { flex: 1 1 100%; min-height: 50px; font-size: 13px; }
+}
