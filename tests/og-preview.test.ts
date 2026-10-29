@@ -4,13 +4,13 @@ import { join } from 'node:path'
 
 const root = process.cwd()
 const html = readFileSync(join(root, 'index.html'), 'utf8')
-const imagePath = join(root, 'public/og-natal-oliveira.png')
+const imagePath = join(root, 'public/og-logo-familia-oliveira.png')
 
 describe('cartão do WhatsApp e da página de revelação', () => {
   it('inclui OG tags no HTML estático, acessíveis a robôs sem JavaScript', () => {
     expect(html).toContain('property="og:title"')
     expect(html).toContain('property="og:description"')
-    expect(html).toContain('property="og:image" content="https://natal-familia-oliveira.pages.dev/og-natal-oliveira.png"')
+    expect(html).toContain('property="og:image" content="https://natal-familia-oliveira.pages.dev/og-logo-familia-oliveira.png"')
     expect(html).toContain('property="og:image:type" content="image/png"')
     expect(html).toContain('property="og:image:width" content="1200"')
     expect(html).toContain('property="og:image:height" content="630"')
