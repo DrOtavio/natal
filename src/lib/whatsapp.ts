@@ -1,17 +1,37 @@
 import { normalizeWhatsApp } from '../../supabase/functions/_shared/whatsapp'
 export { formatWhatsApp, normalizeWhatsApp } from '../../supabase/functions/_shared/whatsapp'
 
+// Emoji codepoints are escaped in source to avoid loss through text encoding tools.
+const tree = '\u{1F384}'
+const sparkles = '\u{2728}'
+const gift = '\u{1F381}'
+const secret = '\u{1F92B}'
+const heart = '\u{2764}\u{FE0F}'
+
 export function whatsappMessage(name: string, revealUrl: string): string {
-  return `Olá, ${name}! 🎄✨\n\nO amigo secreto do Natal da Família Oliveira chegou!\nEste é o seu link individual para descobrir quem você tirou:\n\n${revealUrl}\n\nEste convite é para ${name}. Se este WhatsApp for compartilhado, cada pessoa receberá seu próprio link.\nGuarde a surpresa até a nossa troca de presentes! 🎁\n\nCom carinho,\nFamília Oliveira ❤️`
+  return [
+    `${tree} *NATAL DA FAMÍLIA OLIVEIRA*`,
+    '',
+    `Olá, *${name}*! ${sparkles}`,
+    '',
+    'O sorteio do nosso *Amigo Invisível* aconteceu!',
+    '',
+    `${gift} *Seu link individual:*`,
+    revealUrl,
+    '',
+    'Abra o link e descubra quem você tirou.',
+    `${secret} Guarde o segredo até a troca de presentes!`,
+    '',
+    `Com carinho, *Família Oliveira* ${heart}`,
+  ].join('\n')
 }
 
-/** Only prepares a conversation; sending always requires the administrator's click. */
+/** Open a prefilled WhatsApp conversation; the user still confirms sending. */
 export function whatsappShareUrl(phone: string | null, name: string, revealUrl: string): string | null {
   const digits = phone ? normalizeWhatsApp(`+${phone}`) : null
   if (!digits) return null
-  const url = new URL(`https://wa.me/${digits}`)
-  url.searchParams.set('text', whatsappMessage(name, revealUrl))
-  return url.toString()
+  // Explicit UTF-8 percent encoding preserves emoji, accents and line breaks.
+  return `https://wa.me/${digits}?text=${encodeURIComponent(whatsappMessage(name, revealUrl))}`
 }
 
 /** Reads both old email-based and new phone-based confidential text exports. */
