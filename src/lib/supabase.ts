@@ -1,0 +1,11 @@
+import { createClient } from '@supabase/supabase-js'
+
+const url = import.meta.env.VITE_SUPABASE_URL?.trim()
+const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim()
+
+// Apenas a chave pública pode ser incluída no bundle. A autorização ocorre no servidor.
+export const supabase = url && publishableKey
+  ? createClient(url, publishableKey, {
+      auth: { persistSession: false, detectSessionInUrl: false, autoRefreshToken: true },
+    })
+  : null
