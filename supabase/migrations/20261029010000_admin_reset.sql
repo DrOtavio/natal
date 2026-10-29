@@ -33,3 +33,6 @@ $$;
 
 REVOKE ALL ON FUNCTION public.reset_christmas_event(text, text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.reset_christmas_event(text, text) TO service_role;
+
+-- Atualiza imediatamente o catálogo de RPCs após criar a função.
+NOTIFY pgrst, 'reload schema';
