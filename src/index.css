@@ -894,36 +894,36 @@ body { background: var(--oliveira-ink); color: var(--oliveira-text); }
 }
 
 
-/* === HERO SEM HEADER; ORDEM CORRETA NO CELULAR ===
-   Desktop: copy/actions/note à esquerda e emblema à direita.
-   Mobile: copy -> emblema -> botões -> assinatura. */
+/* === LAYOUT DO HERO — DESKTOP DUAS COLUNAS, MOBILE ORDEM NATURAL ===
+   Desktop: bloco de texto + botões + assinatura à esquerda; emblema à direita.
+   Mobile: texto, emblema, botões e assinatura. Sem duplicar conteúdo. */
 .hero-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.13fr);
-  grid-template-rows: minmax(0, auto) auto minmax(0, auto);
-  grid-template-areas:
-    "copy logo"
-    "actions logo"
-    "note logo";
-  column-gap: clamp(16px, 3vw, 42px);
-  row-gap: 0;
+  grid-template-areas: "copy logo";
+  grid-template-rows: auto;
   align-items: center;
+  column-gap: clamp(20px, 3.1vw, 48px);
   padding-top: clamp(28px, 4vw, 58px);
   padding-bottom: clamp(18px, 3vw, 45px);
 }
-.hero-copy { grid-area: copy; min-width: 0; padding: 0; align-self: end; }
-.hero-grid > .family-emblem { grid-area: logo; align-self: center; }
-.hero-grid > .hero-actions {
-  grid-area: actions;
+.hero-grid > .hero-copy {
+  grid-area: copy;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 0;
+}
+.hero-grid > .family-emblem.christmas-art {
+  grid-area: logo;
   align-self: center;
-  margin: clamp(22px, 2.8vw, 36px) 0 0;
-  gap: 16px;
+  width: 100%;
+  margin: 0 auto;
 }
-.hero-grid > .hero-note {
-  grid-area: note;
-  align-self: start;
-  margin: 23px 0 0;
-}
+.hero-grid .hero-copy-content { width: 100%; }
+.hero-grid .hero-actions { margin: clamp(22px, 3vw, 38px) 0 0; gap: 16px; }
+.hero-grid .hero-note { margin: 22px 0 0; }
 .hero-grid .emblem-logo {
   mix-blend-mode: normal;
   filter: saturate(1.12) contrast(1.04) drop-shadow(0 16px 30px #02150a8c) drop-shadow(0 0 17px #dcae3a3b);
@@ -933,60 +933,57 @@ body { background: var(--oliveira-ink); color: var(--oliveira-text); }
 @media (max-width: 767px) {
   .hero-grid {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto;
     grid-template-areas:
       "copy"
       "logo"
       "actions"
       "note";
+    grid-template-rows: auto;
     row-gap: 0;
     padding-top: 28px;
     padding-bottom: 28px;
   }
-  .hero-copy { padding: 0; }
-  .hero-copy .hero-eyebrow { font-size: 9px; }
-  .hero-copy h1 { margin-top: 17px; }
-  .hero-copy .hero-description {
-    margin-top: 18px;
-    max-width: 44ch;
-    line-height: 1.7;
-  }
+  .hero-grid > .hero-copy { display: contents; }
+  .hero-grid .hero-copy-content { grid-area: copy; min-width: 0; }
+  .hero-grid .hero-copy-content .hero-eyebrow { font-size: 9px; }
+  .hero-grid .hero-copy-content h1 { margin-top: 17px; }
+  .hero-grid .hero-copy-content .hero-description { margin-top: 18px; max-width: 44ch; line-height: 1.7; }
   .hero-grid > .family-emblem.christmas-art {
+    grid-area: logo;
     width: min(100%, 430px);
     max-width: 430px;
     margin: -10px auto -5px;
     aspect-ratio: 1;
   }
-  .hero-grid > .hero-actions {
-    width: 100%;
+  .hero-grid .hero-copy .hero-actions {
+    grid-area: actions;
     display: flex;
     flex-direction: column;
     align-items: stretch;
+    width: 100%;
     gap: 8px;
     margin: 0;
   }
-  .hero-grid > .hero-actions .button {
+  .hero-grid .hero-copy .hero-actions .button {
     width: 100%;
     min-height: 54px;
     font-size: 13px;
     justify-content: center;
   }
-  .hero-grid > .hero-actions .hero-more {
+  .hero-grid .hero-copy .hero-actions .hero-more {
     width: 100%;
     min-height: 40px;
     justify-content: center;
     font-size: 12px;
   }
-  .hero-grid > .hero-note {
+  .hero-grid .hero-copy .hero-note {
+    grid-area: note;
     justify-content: center;
     margin-top: 14px;
     text-align: center;
   }
 }
 @media (max-width: 390px) {
-  .hero-grid > .family-emblem.christmas-art {
-    margin-top: -4px;
-    margin-bottom: -2px;
-  }
-  .hero-copy h1 { font-size: clamp(2.65rem, 11vw, 3.3rem); }
+  .hero-grid > .family-emblem.christmas-art { margin-top: -4px; margin-bottom: -2px; }
+  .hero-grid .hero-copy-content h1 { font-size: clamp(2.65rem, 11vw, 3.3rem); }
 }
