@@ -19,6 +19,26 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_ID: eekiaggyowywtzbgdhbm
     steps:
+      - name: Consultar últimos erros 21000 dos logs PostgreSQL
+        continue-on-error: true
+        run: |
+          node --input-type=module <<'NODE'
+          const url = new URL(`https://api.supabase.com/v1/projects/${process.env.SUPABASE_PROJECT_ID}/analytics/endpoints/logs`)
+          const sql = `SELECT toString(timestamp) AS time, substring(event_message,1,160) AS message FROM logs WHERE source = 'postgres_logs' AND (event_message ILIKE '%21000%' OR event_message ILIKE '%more than one row%') ORDER BY timestamp DESC LIMIT 12`
+          url.searchParams.set('sql', sql)
+          url.searchParams.set('iso_timestamp_start', '2026-10-29T14:00:00Z')
+          url.searchParams.set('iso_timestamp_end', '2026-10-29T15:20:00Z')
+          const response = await fetch(url, { headers: { Authorization: `Bearer ${process.env.SUPABASE_ACCESS_TOKEN}` }, signal: AbortSignal.timeout(30000) })
+          if (!response.ok) throw new Error(`Consulta aos logs: HTTP ${response.status}`)
+          const result = await response.json()
+          if (result.error) throw new Error('Consulta de logs rejeitada')
+          for (const item of (result.result ?? [])) {
+            const message = String(item.message ?? '').replace(/[0-9a-f]{8}-[0-9a-f-]{27,}/gi, '[uuid]').replace(/[A-Za-z0-9_-]{43,}/g, '[token]')
+            console.log('POSTGRES_21000', item.time, message)
+          }
+          console.log('Eventos 21000 encontrados:', (result.result ?? []).length)
+          NODE
+
       - name: Conferir respostas de erro recentes da API (somente metadados)
         continue-on-error: true
         run: |
