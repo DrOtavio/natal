@@ -19,12 +19,15 @@ jobs:
         run: |
           node --input-type=module <<'NODE'
           const query = `DO $probe$
-          DECLARE probe_mode text; error_state text; error_context text;
+          DECLARE probe_mode text; error_state text; error_context text; response_json jsonb;
           BEGIN
             FOREACH probe_mode IN ARRAY ARRAY['draw', 'all']
             LOOP
               BEGIN
-                PERFORM public.reset_christmas_event(probe_mode, 'REINICIAR');
+                SELECT public.admin_reset_event_v2(probe_mode, 'REINICIAR') INTO response_json;
+                IF response_json->>'ok' IS DISTINCT FROM 'true' OR response_json->>'mode' IS DISTINCT FROM probe_mode THEN
+                  RAISE EXCEPTION 'Invalid RPC result' USING ERRCODE = 'P9003';
+                END IF;
                 RAISE EXCEPTION 'ROLLBACK_ONLY' USING ERRCODE = 'P9001';
               EXCEPTION WHEN OTHERS THEN
                 GET STACKED DIAGNOSTICS error_state = RETURNED_SQLSTATE,
