@@ -87,7 +87,7 @@ Para desenvolvimento local, rode `npm test` e `npm run build`. A automação Git
 
 O formulário envia os dados para `christmas-api`. A inscrição é limitada a 200 pessoas por instalação, e o mesmo e-mail não cria duas inscrições. A resposta pública é a mesma para inscrições novas e duplicadas. Os e-mails não são publicados nem enviados ao amigo secreto. **Não há envio automático de e-mail** nesta base: a organização distribui os links em particular.
 
-O painel confirma a sessão no servidor e consulta `admins`. Um usuário apenas autenticado não obtém acesso administrativo. A sessão do painel fica em memória e exige novo login após recarregar a página. A confirmação do sorteio encerra as inscrições de forma atômica; não há opção de refazer o sorteio.
+O painel confirma a sessão no servidor e consulta `admins`. Um usuário apenas autenticado não obtém acesso administrativo. A sessão do painel fica em memória e exige novo login após recarregar a página. A confirmação do sorteio encerra as inscrições de forma atômica. O reinício excepcional por administrador só fica disponível após aplicar a migração adicional de reset e reimplantar a função e o frontend.
 
 ### Sorteio e links
 
