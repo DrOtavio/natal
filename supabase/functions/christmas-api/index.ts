@@ -22,10 +22,11 @@ const directDb = databaseUrl
 Deno.serve(createHandler({
   db,
   allowedOrigins: origins,
-  resetEventDirect: directDb
-    ? async (mode, confirmation) => {
-        const rows = await directDb`SELECT public.admin_reset_event_v2(${mode}, ${confirmation}) AS result`
-        return rows[0]?.result
-      }
-    : undefined,
+  resetEventDirect: async (mode, confirmation) => {
+    if (!directDb) {
+      throw Object.assign(new Error('Direct database URL unavailable'), { code: 'CONNECTION' })
+    }
+    const rows = await directDb`SELECT public.admin_reset_event_v2(${mode}, ${confirmation}) AS result`
+    return rows[0]?.result
+  },
 }))
