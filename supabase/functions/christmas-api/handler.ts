@@ -121,13 +121,14 @@ export function createHandler({ db, allowedOrigins }: Dependencies) {
           if (error) databaseFailure(error)
           const rows = (data ?? []) as { giver_id: string; token_hash: string; name: string; whatsapp: string | null }[]
           const byHash = new Map(rows.map((row) => [row.token_hash, row]))
-          if (hashes.some((hash) => !byHash.has(hash))) {
-            throw new RequestError('O arquivo contém links que não pertencem ao sorteio atual. Confira o arquivo salvo pela organização.', 409)
+          const validLinks = tokens.flatMap((token, index) => {
+            const person = byHash.get(hashes[index])
+            return person ? [{ id: person.giver_id, name: person.name, whatsapp: person.whatsapp, token }] : []
+          })
+          if (validLinks.length === 0) {
+            throw new RequestError('Nenhum link do arquivo pertence ao sorteio atual. Peça novos links à organização.', 409)
           }
-          return json({ links: tokens.map((token, index) => {
-            const person = byHash.get(hashes[index])!
-            return { id: person.giver_id, name: person.name, whatsapp: person.whatsapp, token }
-          }) })
+          return json({ links: validLinks, skipped: tokens.length - validLinks.length })
         }
         case 'reissue-link': {
           await requireAdmin(request)
