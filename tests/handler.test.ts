@@ -17,7 +17,7 @@ function post(body: unknown, headers: Record<string, string> = {}) {
 }
 
 describe('fronteiras da API', () => {
-  it.each(['admin-overview', 'set-registration', 'draw', 'reset-event', 'update-participant', 'delete-participant', 'restore-links'])('bloqueia %s sem JWT mesmo com administrador forjado no corpo', async (action) => {
+  it.each(['admin-overview', 'set-registration', 'draw', 'reset-event', 'update-participant', 'delete-participant', 'restore-links', 'reissue-link'])('bloqueia %s sem JWT mesmo com administrador forjado no corpo', async (action) => {
     const ctx = setup()
     const response = await ctx.handle(post({ action, user_id: 'admin', role: 'admin' }))
     expect(response.status).toBe(401)
@@ -142,12 +142,33 @@ describe('fronteiras da API', () => {
     expect(ctx.rpc).toHaveBeenCalledWith('admin_delete_participant', { p_id: id })
   })
 
-  it.each(['update-participant', 'delete-participant', 'restore-links'])('rejeita %s para usuário comum', async (action) => {
+  it.each(['update-participant', 'delete-participant', 'restore-links', 'reissue-link'])('rejeita %s para usuário comum', async (action) => {
     const ctx = setup()
     ctx.auth.getUser.mockResolvedValue({ data: { user: { id: 'ordinary-user' } }, error: null })
     ctx.from.mockReturnValue({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) })
     expect((await ctx.handle(post({ action, id: '00000000-0000-4000-8000-000000000001', confirmation: 'REMOVER' }, { Authorization: 'Bearer ordinary-user' }))).status).toBe(403)
     expect(ctx.rpc).not.toHaveBeenCalled()
+  })
+
+  it('reemite link somente com JWT administrativo e não revela o destinatário', async () => {
+    const ctx = setup()
+    ctx.auth.getUser.mockResolvedValue({ data: { user: { id: 'admin' } }, error: null })
+    ctx.from.mockReturnValue({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { user_id: 'admin' }, error: null }) }) }) })
+    const id = '00000000-0000-4000-8000-000000000001'
+    const headers = { Authorization: 'Bearer admin' }
+    expect((await ctx.handle(post({ action: 'reissue-link', id, confirmation: 'wrong' }, headers))).status).toBe(400)
+    expect(ctx.rpc).not.toHaveBeenCalled()
+    const response = await ctx.handle(post({ action: 'reissue-link', id, confirmation: 'REEMITIR' }, headers))
+    expect(response.status).toBe(200)
+    const result = await response.json()
+    expect(result.token).toMatch(/^[A-Za-z0-9_-]{43}$/)
+    expect(result).not.toHaveProperty('recipient')
+    expect(ctx.rpc).toHaveBeenCalledWith('admin_reissue_link', {
+      p_giver_id: id,
+      p_token_hash: expect.stringMatching(/^[a-f0-9]{64}$/),
+    })
+    expect(JSON.stringify(ctx.rpc.mock.calls)).not.toContain(result.token)
+    expect(response.headers.get('Cache-Control')).toBe('no-store')
   })
 
   it('recusa IDs e telefones malformados na edição e retorna 404 para cadastro ausente', async () => {
