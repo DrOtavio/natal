@@ -74,9 +74,10 @@ describe('fronteiras da API', () => {
     expect(denied.status).toBe(400)
     expect(ctx.rpc).not.toHaveBeenCalled()
 
+    ctx.rpc.mockResolvedValue({ data: { ok: true, mode, assignmentsRemoved: 2, participantsRemoved: 0 }, error: null })
     const success = await ctx.handle(post({ action: 'reset-event', mode, confirmation: 'REINICIAR' }, headers))
     expect(success.status).toBe(200)
-    expect(ctx.rpc).toHaveBeenCalledWith('reset_christmas_event', { p_mode: mode, p_confirmation: 'REINICIAR' })
+    expect(ctx.rpc).toHaveBeenCalledWith('admin_reset_event_v2', { p_mode: mode, p_confirmation: 'REINICIAR' })
   })
 
   it('informa migração ausente quando o reset tenta usar uma RPC não instalada', async () => {
@@ -89,10 +90,22 @@ describe('fronteiras da API', () => {
       { Authorization: 'Bearer admin' },
     ))
     expect(response.status).toBe(503)
-    expect((await response.json()).error).toContain('migrações do Supabase')
-    expect(ctx.rpc).toHaveBeenCalledWith('reset_christmas_event', {
+    expect((await response.json()).error).toContain('Publique a API Supabase')
+    expect(ctx.rpc).toHaveBeenCalledWith('admin_reset_event_v2', {
       p_mode: 'draw', p_confirmation: 'REINICIAR',
     })
+  })
+
+  it('recusa resposta sem confirmação transacional no reset e expõe 21000 sem SQL interno', async () => {
+    const ctx = setup()
+    ctx.auth.getUser.mockResolvedValue({ data: { user: { id: 'admin' } }, error: null })
+    ctx.from.mockReturnValue({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { user_id: 'admin' }, error: null }) }) }) })
+    const request = post({ action: 'reset-event', mode: 'all', confirmation: 'REINICIAR' }, { Authorization: 'Bearer admin' })
+    expect((await ctx.handle(request)).status).toBe(500)
+    ctx.rpc.mockResolvedValue({ data: null, error: { code: '21000', message: 'internal private SQL' } })
+    const response = await ctx.handle(post({ action: 'reset-event', mode: 'all', confirmation: 'REINICIAR' }, { Authorization: 'Bearer admin' }))
+    expect(response.status).toBe(500)
+    expect((await response.json()).error).toContain('21000')
   })
 
   it('rejeita origem não permitida antes de acessar o banco', async () => {
