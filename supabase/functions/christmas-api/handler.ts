@@ -156,22 +156,21 @@ export function createHandler({ db, allowedOrigins }: Dependencies) {
           if ((body.mode !== 'draw' && body.mode !== 'all') || body.confirmation !== 'REINICIAR') {
             throw new RequestError('Confirme a operação digitando REINICIAR.', 400)
           }
-          const { error } = await db.rpc('reset_christmas_event', {
+          const { data, error } = await db.rpc('admin_reset_event_v2', {
             p_mode: body.mode,
             p_confirmation: body.confirmation,
           })
           if (error) {
-            // Only a safe error code is exposed; SQL internals and personal data remain private.
             const code = typeof error.code === 'string' && /^[A-Za-z0-9_]{3,12}$/.test(error.code)
               ? error.code : 'SEM_CODIGO'
-            console.error('reset-event database error code:', code)
-            if (code === 'PGRST202') {
-              throw new RequestError('A função de reinício ainda não está visível na API. Publique as migrações do Supabase. Código: PGRST202.', 503)
-            }
-            if (code === '42501') {
-              throw new RequestError('O servidor não tem permissão para executar o reinício. Código: 42501.', 503)
-            }
-            throw new RequestError(`Não foi possível reiniciar o sorteio (código ${code}). Nenhum reinício foi confirmado.`, 500)
+            console.error('admin_reset_event_v2 failed, SQLSTATE:', code)
+            if (code === '21000') throw new RequestError('O servidor retornou um conflito de cardinalidade (21000). Nenhum reinício foi confirmado.', 500)
+            if (code === 'PGRST202') throw new RequestError('Atualização do reset pendente no banco (PGRST202). Publique a API Supabase.', 503)
+            if (code === '42501') throw new RequestError('A função de reset não tem permissão de execução (42501).', 503)
+            databaseFailure(error)
+          }
+          if (!data || data.ok !== true || data.mode !== body.mode) {
+            throw new RequestError('O banco não confirmou o reinício. Atualize o painel e confira o estado do sorteio.', 500)
           }
           return json({ ok: true })
         }
