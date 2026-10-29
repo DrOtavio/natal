@@ -1,0 +1,54 @@
+name: Diagnosticar conexao Supabase
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostico:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Testar origem e consulta publica sem credenciais
+        shell: bash
+        run: |
+          set -euo pipefail
+          ENDPOINT="https://eekiaggyowywtzbgdhbm.supabase.co/functions/v1/christmas-api"
+          ORIGIN="https://natal-familia-oliveira.pages.dev"
+
+          echo "=== 1. Teste CORS (OPTIONS) ==="
+          status=$(curl -sS --connect-timeout 10 --max-time 20 -o /tmp/options-body -D /tmp/options-headers -w '%{http_code}' \
+            -X OPTIONS "$ENDPOINT" \
+            -H "Origin: $ORIGIN" \
+            -H "Access-Control-Request-Method: POST" \
+            -H "Access-Control-Request-Headers: authorization,apikey,content-type,x-client-info")
+          echo "HTTP OPTIONS: $status (esperado: 204)"
+          grep -i '^access-control-allow-origin:' /tmp/options-headers || true
+          if [ -s /tmp/options-body ]; then
+            echo "Resposta OPTIONS:"
+            head -c 1500 /tmp/options-body
+            echo
+          fi
+
+          echo "=== 2. Teste publico POST status ==="
+          status=$(curl -sS --connect-timeout 10 --max-time 20 -o /tmp/post-body -D /tmp/post-headers -w '%{http_code}' \
+            -X POST "$ENDPOINT" \
+            -H "Origin: $ORIGIN" \
+            -H "Content-Type: application/json" \
+            --data '{"action":"status"}')
+          echo "HTTP POST: $status (esperado: 200)"
+          grep -i '^access-control-allow-origin:' /tmp/post-headers || true
+          echo "Resposta publica:"
+          head -c 1500 /tmp/post-body
+          echo
+          if [ "$status" != "200" ]; then
+            echo "::error::A API nao retornou HTTP 200. Verifique a funcao christmas-api, seus logs e ALLOWED_ORIGINS."
+            exit 1
+          fi
+          if ! grep -q '"registrationOpen"' /tmp/post-body; then
+            echo "::error::A resposta nao contem o estado esperado do evento."
+            exit 1
+          fi
+          echo "A consulta publica ao Supabase respondeu corretamente."
