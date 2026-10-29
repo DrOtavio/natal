@@ -6,6 +6,7 @@ if (!token || !project || !/^[a-z]+$/.test(project)) throw new Error('Configure 
 
 // Only reviewed fixed migrations. No user-supplied SQL or destructive data changes.
 const migrations = [
+  '20261029010000_admin_reset.sql',
   '20261029020000_whatsapp_participants.sql',
   '20261029030000_reissue_link.sql',
 ]
