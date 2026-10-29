@@ -19,6 +19,23 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_ID: eekiaggyowywtzbgdhbm
     steps:
+      - name: Detectar falhas da Edge Function sem expor dados
+        continue-on-error: true
+        run: |
+          node --input-type=module <<'NODE'
+          const url = new URL(`https://api.supabase.com/v1/projects/${process.env.SUPABASE_PROJECT_ID}/analytics/endpoints/logs`)
+          const sql = `SELECT toString(timestamp) AS time, source, substring(event_message,1,180) AS message, log_attributes['response.status_code'] AS status FROM logs WHERE source IN ('function_logs','function_edge_logs') AND (event_message ILIKE '%reset%' OR event_message ILIKE '%21000%' OR toInt32OrZero(log_attributes['response.status_code']) >= 500) ORDER BY timestamp DESC LIMIT 25`
+          url.searchParams.set('sql',sql)
+          url.searchParams.set('iso_timestamp_start','2026-10-29T14:00:00Z')
+          url.searchParams.set('iso_timestamp_end','2026-10-29T15:30:00Z')
+          const res=await fetch(url,{headers:{Authorization:`Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`},signal:AbortSignal.timeout(30000)})
+          if(!res.ok) throw Error('HTTP '+res.status)
+          const data=await res.json()
+          if(data.error) throw Error('Consulta inválida')
+          const rows=(data.result||[]).map(x=>({time:x.time,source:x.source,status:x.status,code:x.message?.match(/(?:21000|PGRST[0-9]+|42501|500)/)?.[0]||null}))
+          console.log('FUNCAO_RESETS:',JSON.stringify(rows))
+          NODE
+
       - name: Localizar erros da API REST independentemente do caminho
         continue-on-error: true
         run: |
@@ -101,7 +118,7 @@ jobs:
           const elevated = keys.find(x => x.name === 'service_role' || x.id === 'service_role')
           const apiKey = elevated?.api_key
           if (!apiKey) throw new Error('Chave service_role não acessível; verificação REST ignorada.')
-          const test = await fetch(`https://${ref}.supabase.co/rest/v1/rpc/reset_christmas_event`, {
+          const test = await fetch(`https://${ref}.supabase.co/rest/v1/rpc/admin_reset_event_v2`, {
             method: 'POST',
             headers: { apikey: apiKey, Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
             // IMPORTANT: both values are invalid by design. This must NOT reset the event.
