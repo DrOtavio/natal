@@ -20,10 +20,10 @@ export function HomePage() {
             <p className="eyebrow hero-eyebrow"><span /> É tempo de celebrar nossas histórias</p>
             <h1 id="hero-title">O melhor presente<br />é <em>estar junto.</em></h1>
             <p className="hero-description">O Natal da Família Oliveira começa aqui. Vamos trocar sorrisos, criar memórias e guardar um segredinho até a hora do abraço.</p>
-            <div className="hero-actions"><a href="#inscricao" className="button button-gold">Participar do amigo secreto <ArrowUpRight size={18} aria-hidden="true" /></a><a href="#como-funciona" className="hero-more">Conheça a brincadeira <ArrowDown size={15} aria-hidden="true" /></a></div>
-            <p className="hero-note"><Heart size={14} aria-hidden="true" /> Para a nossa família. Com todo o carinho.</p>
           </div>
           <ChristmasArt />
+          <div className="hero-actions"><a href="#inscricao" className="button button-gold">Participar do amigo secreto <ArrowUpRight size={18} aria-hidden="true" /></a><a href="#como-funciona" className="hero-more">Conheça a brincadeira <ArrowDown size={15} aria-hidden="true" /></a></div>
+          <p className="hero-note"><Heart size={14} aria-hidden="true" /> Para a nossa família. Com todo o carinho.</p>
         </div>
         <div className="hero-bottom page-shell"><span>ENCONTROS QUE VIRAM MEMÓRIAS</span><span className="hero-bottom-center"><Sparkles size={13} aria-hidden="true" /> Nosso amigo secreto</span><a href="#como-funciona" aria-label="Descobrir como funciona"><ArrowDown size={17} aria-hidden="true" /></a></div>
       </section>
