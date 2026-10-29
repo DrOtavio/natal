@@ -8,6 +8,7 @@ on:
       - 'supabase/migrations/20261029010000_admin_reset.sql'
       - 'supabase/migrations/20261029020000_whatsapp_participants.sql'
       - 'supabase/migrations/20261029030000_reissue_link.sql'
+      - 'supabase/migrations/20261029040000_admin_reset_v2.sql'
       - '.github/scripts/apply-whatsapp-migration.mjs'
       - '.github/scripts/check-christmas-api.mjs'
       - '.github/workflows/deploy-supabase.yml'
