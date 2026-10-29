@@ -75,7 +75,7 @@ O `package-lock.json` está versionado para instalações reproduzíveis com `np
 
 ## Reinício administrativo (testes ou nova edição)
 
-A migração adicional `supabase/migrations/20261029010000_admin_reset.sql` adiciona a RPC protegida `reset_christmas_event`. **Se o projeto já recebeu a migração inicial, execute somente esse novo arquivo no SQL Editor**, uma vez. A migração inicial não deve ser repetida. Em seguida, reimplante `christmas-api` pela automação GitHub Actions e publique novamente a interface compilada via Cloudflare Pages.
+A migração adicional `supabase/migrations/20261029010000_admin_reset.sql` adiciona a RPC protegida `reset_christmas_event`. **A automação GitHub Actions agora instala ou atualiza essa RPC antes de publicar `christmas-api`**, junto das migrações aditivas de WhatsApp e reemissão de convites. A migração inicial não é repetida e os participantes, pares e links só são apagados quando um administrador aciona explicitamente o reset. Para conferir a instalação no SQL Editor sem alterar dados: `SELECT to_regprocedure('public.reset_christmas_event(text,text)') AS reset_rpc;` deve retornar o nome da função, não `NULL`.
 
 O painel `/admin` terá uma seção **Zona de manutenção**, com:
 - **Refazer sorteio (manter inscritos):** elimina todos os pares e links antigos, mantém participantes e dicas, reabre inscrições.
