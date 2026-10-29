@@ -9,7 +9,7 @@ export function ChristmasArt() {
       <div className="emblem-orbit emblem-orbit-inner" />
       <div className="emblem-logo-wrap">
         <img
-          src="/logo-natal-familia-oliveira.webp"
+          src="/logo-natal-familia-oliveira-transparente.webp"
           className="emblem-logo"
           width="1254"
           height="1254"
