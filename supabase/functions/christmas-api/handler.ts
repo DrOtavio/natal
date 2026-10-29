@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createToken, drawRecipients, hashToken } from '../_shared/draw.ts'
 import { parseParticipantId, parseRegistration, parseToken, RequestError } from '../_shared/validation.ts'
 
-interface Dependencies { db: SupabaseClient; allowedOrigins: readonly string[] }
+interface Dependencies { db: SupabaseClient; allowedOrigins: readonly string[]; resetEventDirect?: (mode: 'draw' | 'all', confirmation: 'REINICIAR') => Promise<unknown> }
 interface Participant { id: string; name: string; whatsapp: string | null; wishlist: string; created_at: string }
 interface DatabaseError { code?: string; message?: string }
 
@@ -18,7 +18,7 @@ function databaseFailure(error: DatabaseError): never {
   throw new RequestError('Não foi possível concluir a operação. Tente novamente.', 500)
 }
 
-export function createHandler({ db, allowedOrigins }: Dependencies) {
+export function createHandler({ db, allowedOrigins, resetEventDirect }: Dependencies) {
   async function requireAdmin(request: Request) {
     const match = /^Bearer (.+)$/i.exec(request.headers.get('authorization') ?? '')
     if (!match) throw new RequestError('Entre na área da organização para continuar.', 401)
@@ -156,10 +156,26 @@ export function createHandler({ db, allowedOrigins }: Dependencies) {
           if ((body.mode !== 'draw' && body.mode !== 'all') || body.confirmation !== 'REINICIAR') {
             throw new RequestError('Confirme a operação digitando REINICIAR.', 400)
           }
-          const { data, error } = await db.rpc('admin_reset_event_v2', {
-            p_mode: body.mode,
-            p_confirmation: body.confirmation,
-          })
+          // Prefer direct PostgreSQL for the destructive, transactional RPC. The
+          // PostgREST wrapper was returning SQLSTATE 21000 despite SQL tests
+          // passing for both modes. Authentication and confirmation happen first.
+          let data: unknown = null
+          let error: DatabaseError | null = null
+          if (resetEventDirect) {
+            try {
+              data = await resetEventDirect(body.mode, 'REINICIAR')
+            } catch (failure) {
+              error = typeof failure === 'object' && failure !== null
+                ? failure as DatabaseError : { code: 'CONNECTION' }
+            }
+          } else {
+            const response = await db.rpc('admin_reset_event_v2', {
+              p_mode: body.mode,
+              p_confirmation: body.confirmation,
+            })
+            data = response.data
+            error = response.error
+          }
           if (error) {
             const code = typeof error.code === 'string' && /^[A-Za-z0-9_]{3,12}$/.test(error.code)
               ? error.code : 'SEM_CODIGO'
@@ -167,9 +183,10 @@ export function createHandler({ db, allowedOrigins }: Dependencies) {
             if (code === '21000') throw new RequestError('O servidor retornou um conflito de cardinalidade (21000). Nenhum reinício foi confirmado.', 500)
             if (code === 'PGRST202') throw new RequestError('Atualização do reset pendente no banco (PGRST202). Publique a API Supabase.', 503)
             if (code === '42501') throw new RequestError('A função de reset não tem permissão de execução (42501).', 503)
+            if (code === 'CONNECTION') throw new RequestError('A conexão direta com o banco não foi estabelecida. Verifique SUPABASE_DB_URL na Edge Function.', 503)
             databaseFailure(error)
           }
-          if (!data || data.ok !== true || data.mode !== body.mode) {
+          if (!data || typeof data !== 'object' || !('ok' in data) || data.ok !== true || !('mode' in data) || data.mode !== body.mode) {
             throw new RequestError('O banco não confirmou o reinício. Atualize o painel e confira o estado do sorteio.', 500)
           }
           return json({ ok: true })
