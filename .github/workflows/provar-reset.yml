@@ -1,0 +1,51 @@
+name: Diagnóstico transacional do reset (desfaz automaticamente)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/provar-reset.yml']
+  workflow_dispatch:
+permissions: { contents: read }
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_ID: eekiaggyowywtzbgdhbm
+    steps:
+      - name: Executar reset em subtransação que sempre é revertida
+        run: |
+          node --input-type=module <<'NODE'
+          if (!process.env.SUPABASE_ACCESS_TOKEN) throw Error('SUPABASE_ACCESS_TOKEN ausente')
+          const sql = `DO $outer$
+          DECLARE state text; context_message text;
+          BEGIN
+            BEGIN
+              PERFORM public.reset_christmas_event('draw', 'REINICIAR');
+              RAISE EXCEPTION 'SAFETY_ROLLBACK' USING ERRCODE = 'P9001';
+            EXCEPTION WHEN OTHERS THEN
+              GET STACKED DIAGNOSTICS state = RETURNED_SQLSTATE,
+                                      context_message = PG_EXCEPTION_CONTEXT;
+              -- Any work inside the BEGIN/EXCEPTION block is rolled back,
+              -- even when the RPC itself succeeds. The guard is P9001.
+              IF state <> 'P9001' THEN
+                RAISE EXCEPTION 'RESET_SAFE_PROBE code=% context=%',
+                  state, left(context_message, 350) USING ERRCODE = 'P9002';
+              END IF;
+            END;
+          END $outer$`
+          const response = await fetch(`https://api.supabase.com/v1/projects/${process.env.SUPABASE_PROJECT_ID}/database/query`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: sql }),
+            signal: AbortSignal.timeout(30000),
+          })
+          if (!response.ok) {
+            const data = await response.json().catch(() => ({}))
+            const text = String(data.message || data.error || 'erro não estruturado').replace(/[0-9a-f-]{36}/gi, '[id]').slice(0,550)
+            console.log('Diagnóstico seguro:', response.status, text)
+            process.exitCode = 1
+          } else {
+            console.log('Diagnóstico seguro: chamada passou e todas as alterações foram revertidas')
+          }
+          NODE
