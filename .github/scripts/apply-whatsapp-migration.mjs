@@ -9,6 +9,7 @@ const migrations = [
   '20261029010000_admin_reset.sql',
   '20261029020000_whatsapp_participants.sql',
   '20261029030000_reissue_link.sql',
+  '20261029040000_admin_reset_v2.sql',
 ]
 
 for (const filename of migrations) {
