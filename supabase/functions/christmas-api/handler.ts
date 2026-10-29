@@ -96,6 +96,18 @@ export function createHandler({ db, allowedOrigins }: Dependencies) {
           if (error) databaseFailure(error)
           return json({ ok: true })
         }
+        case 'reset-event': {
+          await requireAdmin(request)
+          if ((body.mode !== 'draw' && body.mode !== 'all') || body.confirmation !== 'REINICIAR') {
+            throw new RequestError('Confirme a operação digitando REINICIAR.', 400)
+          }
+          const { error } = await db.rpc('reset_christmas_event', {
+            p_mode: body.mode,
+            p_confirmation: body.confirmation,
+          })
+          if (error) databaseFailure(error)
+          return json({ ok: true })
+        }
         case 'draw': {
           await requireAdmin(request)
           const { data, error } = await db.from('participants').select('id, name, email, wishlist, created_at').order('id')
