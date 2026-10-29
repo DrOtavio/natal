@@ -122,6 +122,28 @@ describe('migração e transações PostgreSQL', () => {
     expect((await db.query('select id from public.participants')).rows).toHaveLength(2)
   })
 
+  it('reemite convite sem trocar a pessoa sorteada e invalida o token anterior', async () => {
+    await seed()
+    await db.query('select public.complete_draw($1::jsonb)', [JSON.stringify(assignments)])
+    await db.query('select public.reveal_assignment($1)', ['a'.repeat(64)])
+    const before = (await db.query('select recipient_id from public.assignments where giver_id = $1', [a])).rows[0].recipient_id
+    await db.query('select public.admin_reissue_link($1, $2)', [a, 'c'.repeat(64)])
+    const after = (await db.query('select recipient_id, token_hash, revealed_at from public.assignments where giver_id = $1', [a])).rows[0]
+    expect(after).toEqual({ recipient_id: before, token_hash: 'c'.repeat(64), revealed_at: null })
+    expect((await db.query('select public.reveal_assignment($1) as reveal', ['a'.repeat(64)])).rows[0].reveal).toBeNull()
+    expect((await db.query('select public.reveal_assignment($1) as reveal', ['c'.repeat(64)])).rows[0].reveal).toEqual({ giverName: 'Ana', recipientName: 'Bia', wishlist: 'Chocolate' })
+    expect((await db.query('select token_hash from public.assignments where giver_id = $1', [b])).rows[0].token_hash).toBe('b'.repeat(64))
+  })
+
+  it('bloqueia reemissão antes do sorteio e para cadastro inexistente', async () => {
+    await seed()
+    await expect(db.query('select public.admin_reissue_link($1, $2)', [a, 'c'.repeat(64)])).rejects.toMatchObject({ code: '55000' })
+    await db.query('select public.complete_draw($1::jsonb)', [JSON.stringify(assignments)])
+    const missing = '00000000-0000-4000-8000-000000000099'
+    await expect(db.query('select public.admin_reissue_link($1, $2)', [missing, 'c'.repeat(64)])).rejects.toMatchObject({ code: 'P0002' })
+    expect((await db.query('select token_hash from public.assignments where giver_id = $1', [a])).rows[0].token_hash).toBe('a'.repeat(64))
+  })
+
   it('aplica a migração WhatsApp em uma edição com sorteio existente sem perder dados', async () => {
     const legacy = new PGlite()
     try {
@@ -146,7 +168,7 @@ describe('migração e transações PostgreSQL', () => {
       for (const table of ['participants', 'assignments', 'admins', 'christmas_event']) {
         await expect(db.query(`select * from public.${table}`)).rejects.toMatchObject({ code: '42501' })
       }
-      for (const sql of ["select public.register_participant('Nome', 'a@example.com', '')", "select public.register_participant_whatsapp('Nome', '5511999992222', '')", `select public.admin_update_participant('${a}', 'Nome', '5511999992222', '')`, `select public.admin_delete_participant('${a}')`, "select public.admin_restore_links(array['hash'])", 'select public.set_registration(true)', "select public.complete_draw('[]'::jsonb)", "select public.reveal_assignment('hash')"]) {
+      for (const sql of ["select public.register_participant('Nome', 'a@example.com', '')", "select public.register_participant_whatsapp('Nome', '5511999992222', '')", `select public.admin_update_participant('${a}', 'Nome', '5511999992222', '')`, `select public.admin_delete_participant('${a}')`, "select public.admin_restore_links(array['hash'])", `select public.admin_reissue_link('00000000-0000-4000-8000-000000000001', 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc')`, 'select public.set_registration(true)', "select public.complete_draw('[]'::jsonb)", "select public.reveal_assignment('hash')"]) {
         await expect(db.query(sql)).rejects.toMatchObject({ code: '42501' })
       }
     } finally { await db.exec('reset role') }
