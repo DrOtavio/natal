@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { createHandler } from './handler.ts'
+import postgres from 'postgres'
 
 const url = Deno.env.get('SUPABASE_URL')
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -11,4 +12,20 @@ if (!url || !serviceKey || !origins?.length || origins.includes('*')) {
 
 const db = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } })
 
-Deno.serve(createHandler({ db, allowedOrigins: origins }))
+// Supabase provides this secret automatically in hosted Edge Functions.
+// Keep a single short-lived database connection per isolate for the rare admin reset.
+const databaseUrl = Deno.env.get('SUPABASE_DB_URL')
+const directDb = databaseUrl
+  ? postgres(databaseUrl, { max: 1, idle_timeout: 5, connect_timeout: 10, prepare: false })
+  : undefined
+
+Deno.serve(createHandler({
+  db,
+  allowedOrigins: origins,
+  resetEventDirect: directDb
+    ? async (mode, confirmation) => {
+        const rows = await directDb`SELECT public.admin_reset_event_v2(${mode}, ${confirmation}) AS result`
+        return rows[0]?.result
+      }
+    : undefined,
+}))
