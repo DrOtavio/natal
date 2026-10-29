@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: Validar, migrar contatos e implantar christmas-api
+    name: Validar, migrar RPCs e implantar christmas-api
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
