@@ -17,7 +17,7 @@ function post(body: unknown, headers: Record<string, string> = {}) {
 }
 
 describe('fronteiras da API', () => {
-  it.each(['admin-overview', 'set-registration', 'draw'])('bloqueia %s sem JWT mesmo com administrador forjado no corpo', async (action) => {
+  it.each(['admin-overview', 'set-registration', 'draw', 'reset-event'])('bloqueia %s sem JWT mesmo com administrador forjado no corpo', async (action) => {
     const ctx = setup()
     const response = await ctx.handle(post({ action, user_id: 'admin', role: 'admin' }))
     expect(response.status).toBe(401)
@@ -60,6 +60,23 @@ describe('fronteiras da API', () => {
     expect(args.p_assignments[0].token_hash).toMatch(/^[a-f0-9]{64}$/)
     expect(JSON.stringify(args)).not.toContain(body.links[0].token)
     expect(response.headers.get('Cache-Control')).toBe('no-store')
+  })
+
+  it.each(['draw', 'all'])('exige autorização administrativa e confirmação para reset %s', async (mode) => {
+    const ctx = setup()
+    ctx.auth.getUser.mockResolvedValue({ data: { user: { id: 'admin' } }, error: null })
+    ctx.from.mockImplementation(() => ({
+      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { user_id: 'admin' }, error: null }) }) }),
+    }))
+    const headers = { Authorization: 'Bearer valid-admin-token' }
+
+    const denied = await ctx.handle(post({ action: 'reset-event', mode, confirmation: 'wrong' }, headers))
+    expect(denied.status).toBe(400)
+    expect(ctx.rpc).not.toHaveBeenCalled()
+
+    const success = await ctx.handle(post({ action: 'reset-event', mode, confirmation: 'REINICIAR' }, headers))
+    expect(success.status).toBe(200)
+    expect(ctx.rpc).toHaveBeenCalledWith('reset_christmas_event', { p_mode: mode, p_confirmation: 'REINICIAR' })
   })
 
   it('rejeita origem não permitida antes de acessar o banco', async () => {
