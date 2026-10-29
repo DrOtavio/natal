@@ -166,7 +166,7 @@ export function createHandler({ db, allowedOrigins }: Dependencies) {
               ? error.code : 'SEM_CODIGO'
             console.error('reset-event database error code:', code)
             if (code === 'PGRST202') {
-              throw new RequestError('A função de reinício ainda não está visível na API. Código: PGRST202.', 503)
+              throw new RequestError('A função de reinício ainda não está visível na API. Publique as migrações do Supabase. Código: PGRST202.', 503)
             }
             if (code === '42501') {
               throw new RequestError('O servidor não tem permissão para executar o reinício. Código: 42501.', 503)
