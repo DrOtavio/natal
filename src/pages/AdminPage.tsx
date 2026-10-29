@@ -112,6 +112,25 @@ function Dashboard() {
     finally { setBusy(false) }
   }
 
+  async function reissueLink(person: Participant) {
+    if (busy || !overview?.drawn) return
+    const confirmed = window.confirm(
+      `Gerar um novo link para ${person.name}?\n\nO link anterior dessa pessoa deixará de funcionar. O amigo sorteado NÃO mudará.\n\nSe já enviou o link antigo, avise a pessoa e encaminhe o novo.`
+    )
+    if (!confirmed) return
+    setBusy(true)
+    setError('')
+    try {
+      const { token } = await api.reissueLink(person.id)
+      setLinks((current) => [
+        ...current.filter((link) => link.id !== person.id),
+        { id: person.id, name: person.name, whatsapp: person.whatsapp, token },
+      ])
+      setCopied('')
+    } catch (err) { setError(errorMessage(err)) }
+    finally { setBusy(false) }
+  }
+
   async function saveParticipant(data: ParticipantUpdate) {
     if (busy) return
     setBusy(true)
@@ -192,7 +211,7 @@ function Dashboard() {
           {confirmDraw && !overview.drawn && <div className="notice mt-6"><p className="font-semibold">Confirma o sorteio com {overview.participantCount} participantes?</p><p className="mt-2">As inscrições serão encerradas. Os links secretos aparecerão uma única vez: salve o arquivo antes de fechar a página.</p><div className="mt-4 flex flex-wrap gap-3"><button className="button button-small" disabled={busy} onClick={() => void runDraw()}>{busy ? 'Sorteando com segurança…' : 'Confirmar sorteio'}</button><button className="button button-secondary button-small" disabled={busy} onClick={() => setConfirmDraw(false)}>Cancelar</button></div></div>}
         </div>
         <input ref={importInput} type="file" accept=".txt,text/plain" className="hidden" aria-label="Arquivo confidencial de links" onChange={(event) => void importLinks(event)} />
-        {overview.drawn && <div className="mb-7 flex flex-wrap items-center gap-4"><button type="button" className="button button-secondary button-small" disabled={busy} onClick={() => importInput.current?.click()}><Upload size={15} aria-hidden="true" />{busy ? 'Aguarde…' : 'Carregar links salvos'}</button><p className="max-w-xl text-xs leading-6 text-muted">Use o arquivo baixado após o sorteio. Os convites serão associados às pessoas certas, sem refazer o sorteio.</p></div>}
+        {overview.drawn && <div className="mb-7 flex flex-wrap items-center gap-4"><button type="button" className="button button-secondary button-small" disabled={busy} onClick={() => importInput.current?.click()}><Upload size={15} aria-hidden="true" />{busy ? 'Aguarde…' : 'Carregar links salvos'}</button><p className="max-w-xl text-xs leading-6 text-muted">Para enviar pelo celular, carregue o arquivo confidencial do sorteio. Os botões de WhatsApp aparecerão junto de cada participante. Se perdeu o arquivo, é possível reemitir o link individual abaixo, invalidando somente o link antigo da pessoa.</p></div>}
         {links.length > 0 && <section className="paper-card mb-8 border-gold p-6 sm:p-8" aria-label="Links individuais confidenciais">
           <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="eyebrow text-wine">Um convite para cada pessoa</p><h2 className="mt-2 font-display text-3xl">Cada segredo, no seu lugar.</h2></div><button className="button button-small" onClick={downloadLinks}><Download size={15} aria-hidden="true" /> Baixar links confidenciais</button></div>
           <p className="my-5 text-sm leading-7 text-muted">O botão abre uma conversa com o nome e o link daquela pessoa na mensagem. Confira e toque em enviar no WhatsApp. Mesmo com números repetidos, cada participante recebe um convite separado.</p>
@@ -209,12 +228,24 @@ function Dashboard() {
         <section className="paper-card mb-8 overflow-hidden" aria-label="Participantes inscritos">
           <div className="flex flex-wrap items-center justify-between gap-4 p-6"><div><p className="eyebrow text-wine">A nossa lista de presenças</p><h2 className="mt-2 font-display text-3xl" tabIndex={-1} data-participants-heading>Quem vem celebrar</h2></div><button className="button button-secondary button-small" disabled={busy} onClick={() => void refresh()} aria-label="Atualizar participantes"><RefreshCw size={15} aria-hidden="true" /></button></div>
           {overview.drawn && <p id="participant-removal-note" className="mx-6 mb-5 text-xs leading-6 text-muted">Depois do sorteio, você pode corrigir nomes, números e dicas. A remoção fica bloqueada para preservar os pares e os links já distribuídos.</p>}
-          {overview.participants.length ? <ul className="participant-list">{overview.participants.map((person) => <li key={person.id} className="participant-row" data-participant-id={person.id}>
+          {overview.participants.length ? <ul className="participant-list">{overview.participants.map((person) => {
+            const currentLink = links.find((link) => link.id === person.id)
+            const shareUrl = currentLink ? whatsappShareUrl(person.whatsapp, person.name, individualUrl(currentLink.token)) : null
+            return <li key={person.id} className="participant-row" data-participant-id={person.id}>
             <div className="participant-name"><span className="eyebrow">Participante</span><h3>{person.name}</h3></div>
             <div className="participant-contact"><span className="eyebrow">WhatsApp privado</span><p className={!person.whatsapp ? 'text-wine' : ''}>{formatWhatsApp(person.whatsapp)}</p></div>
             <div className="participant-wishlist"><span className="eyebrow">Dica de presente</span><p>{person.wishlist || 'Ainda sem dica de presente.'}</p></div>
-            <div className="participant-actions"><button type="button" className="button button-secondary button-small" disabled={busy} onClick={() => { setParticipantError(''); setEditPerson(person) }} aria-label={`Editar cadastro de ${person.name}`}><Pencil size={15} aria-hidden="true" /> Editar</button><button type="button" className="button button-secondary button-small button-remove" disabled={busy || overview.drawn} aria-describedby={overview.drawn ? 'participant-removal-note' : undefined} onClick={() => { setParticipantError(''); setDeletePerson(person) }} aria-label={`Remover cadastro de ${person.name}`}><Trash2 size={15} aria-hidden="true" /> Remover</button></div>
-          </li>)}</ul> : <p className="px-6 pb-8 text-sm text-muted">A lista está esperando o primeiro nome da família.</p>}
+            <div className="participant-actions">
+              {overview.drawn && (currentLink
+                ? shareUrl
+                  ? <a className="button button-whatsapp button-small" href={shareUrl} target="_blank" rel="noopener noreferrer" aria-label={`Enviar convite de ${person.name} pelo WhatsApp`}><MessageCircle size={17} aria-hidden="true" /> Enviar pelo WhatsApp</a>
+                  : <button type="button" className="button button-whatsapp button-small" disabled>Informe o WhatsApp</button>
+                : <button type="button" className="button button-whatsapp button-small" disabled={busy} onClick={() => void reissueLink(person)} aria-label={`Reemitir convite de ${person.name}; invalida o link anterior`}><RotateCcw size={16} aria-hidden="true" /> Reemitir link para enviar</button>
+              )}
+              <button type="button" className="button button-secondary button-small" disabled={busy} onClick={() => { setParticipantError(''); setEditPerson(person) }} aria-label={`Editar cadastro de ${person.name}`}><Pencil size={15} aria-hidden="true" /> Editar</button>
+              <button type="button" className="button button-secondary button-small button-remove" disabled={busy || overview.drawn} aria-describedby={overview.drawn ? 'participant-removal-note' : undefined} onClick={() => { setParticipantError(''); setDeletePerson(person) }} aria-label={`Remover cadastro de ${person.name}`}><Trash2 size={15} aria-hidden="true" /> Remover</button>
+            </div>
+          </li>})}</ul> : <p className="px-6 pb-8 text-sm text-muted">A lista está esperando o primeiro nome da família.</p>}
         </section>
         <section className="paper-card maintenance-card mb-8 p-6 sm:p-8" aria-label="Manutenção do evento">
           <p className="eyebrow text-wine">Zona de manutenção</p>
