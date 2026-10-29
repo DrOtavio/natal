@@ -65,6 +65,18 @@ O `package-lock.json` está versionado para instalações reproduzíveis com `np
 
    `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` são fornecidos automaticamente no servidor Supabase. Nenhuma chave administrativa precisa ser copiada para este repositório ou para o Cloudflare Pages. O arquivo `supabase/functions/.env.example` documenta a configuração local da função. Em um ambiente de nuvem com rede restrita, libere o hostname específico do projeto Supabase nas configurações antes de testar a conexão.
 
+## Reinício administrativo (testes ou nova edição)
+
+A migração adicional `supabase/migrations/20261029010000_admin_reset.sql` adiciona a RPC protegida `reset_christmas_event`. **Se o projeto já recebeu a migração inicial, execute somente esse novo arquivo no SQL Editor**, uma vez. A migração inicial não deve ser repetida. Em seguida, reimplante `christmas-api` pela automação GitHub Actions e publique novamente a interface compilada via Cloudflare Pages.
+
+O painel `/admin` terá uma seção **Zona de manutenção**, com:
+- **Refazer sorteio (manter inscritos):** elimina todos os pares e links antigos, mantém participantes e dicas, reabre inscrições.
+- **Apagar inscrições e sorteio:** elimina também participantes e dicas e reabre inscrições do zero.
+
+Ambas as opções pedem `REINICIAR` digitado por extenso e exigem sessão de administrador validada no servidor. São **irreversíveis**: links anteriores param de funcionar e pessoas que já visualizaram resultados podem conhecer combinações antigas. Não execute reinício de um evento real sem informar todos os participantes. O banco aplica cada reset de forma atômica usando o mesmo lock de inscrições/sorteio; não modifica a lista `admins`.
+
+Para desenvolvimento local, rode `npm test` e `npm run build`. A automação GitHub Actions **Validar aplicacao** também é disparada após alterações relevantes. Para o site publicado, execute novamente **Publicar API de Natal no Supabase** e **Gerar site para Cloudflare Pages**, baixe o artefato `dist` e faça novo Direct Upload no projeto Cloudflare já existente.
+
 ## Fluxos
 
 | Rota | Uso |
