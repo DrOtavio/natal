@@ -987,3 +987,36 @@ body { background: var(--oliveira-ink); color: var(--oliveira-text); }
   .hero-grid > .family-emblem.christmas-art { margin-top: -4px; margin-bottom: -2px; }
   .hero-grid .hero-copy-content h1 { font-size: clamp(2.65rem, 11vw, 3.3rem); }
 }
+
+/* Recuperação segura dos links secretos no desktop e no celular. */
+.participant-link-recovery {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 9px;
+  width: min(100%, 255px);
+}
+.participant-link-recovery .button {
+  width: 100%;
+  white-space: normal;
+  line-height: 1.45;
+  text-align: center;
+  min-height: 43px;
+  padding: 9px 12px;
+  font-size: 11px;
+}
+.button-restore-links {
+  color: #09271b;
+  border: 1px solid #e4c671;
+  background: linear-gradient(110deg, #f7dc8f, #e4ad46);
+  box-shadow: 0 0 16px #dab65731;
+}
+@media (min-width: 1024px) {
+  .participant-row { grid-template-columns: minmax(145px, 1fr) minmax(130px, 1fr) minmax(140px, 1.1fr) minmax(190px, 245px); gap: clamp(13px, 1.8vw, 24px); }
+  .participant-actions { min-width: 190px; align-items: stretch; }
+  .participant-actions > .button-whatsapp { width: 100%; white-space: normal; }
+}
+@media (max-width: 767px) {
+  .participant-link-recovery { width: 100%; }
+  .participant-link-recovery .button { min-height: 48px; }
+}
