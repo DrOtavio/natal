@@ -26,6 +26,7 @@ export const api = {
   updateParticipant: (data: { id: string; name: string; whatsapp: string; wishlist: string }) => request<{ ok: boolean }>('update-participant', { ...data, whatsapp: `+${data.whatsapp}` }),
   deleteParticipant: (id: string) => request<{ ok: boolean }>('delete-participant', { id, confirmation: 'REMOVER' }),
   restoreLinks: (tokens: string[]) => request<{ links: IndividualLink[] }>('restore-links', { tokens }),
+  reissueLink: (id: string) => request<{ token: string }>('reissue-link', { id, confirmation: 'REEMITIR' }),
   overview: () => request<AdminOverview>('admin-overview'),
   setRegistration: (open: boolean) => request<{ ok: boolean }>('set-registration', { open }),
   draw: () => request<{ links: IndividualLink[] }>('draw'),
