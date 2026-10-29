@@ -1,7 +1,7 @@
 -- Reset administrativo do evento. A autorização humana é verificada no handler
 -- da Edge Function, que chama esta RPC exclusivamente com service_role.
 -- É uma transação única: não há estado parcial entre remoção e reabertura.
-CREATE FUNCTION public.reset_christmas_event(p_mode text, p_confirmation text)
+CREATE OR REPLACE FUNCTION public.reset_christmas_event(p_mode text, p_confirmation text)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 DECLARE
   v_event public.christmas_event;
