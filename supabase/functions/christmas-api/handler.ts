@@ -160,7 +160,19 @@ export function createHandler({ db, allowedOrigins }: Dependencies) {
             p_mode: body.mode,
             p_confirmation: body.confirmation,
           })
-          if (error) databaseFailure(error)
+          if (error) {
+            // Only a safe error code is exposed; SQL internals and personal data remain private.
+            const code = typeof error.code === 'string' && /^[A-Za-z0-9_]{3,12}$/.test(error.code)
+              ? error.code : 'SEM_CODIGO'
+            console.error('reset-event database error code:', code)
+            if (code === 'PGRST202') {
+              throw new RequestError('A função de reinício ainda não está visível na API. Código: PGRST202.', 503)
+            }
+            if (code === '42501') {
+              throw new RequestError('O servidor não tem permissão para executar o reinício. Código: 42501.', 503)
+            }
+            throw new RequestError(`Não foi possível reiniciar o sorteio (código ${code}). Nenhum reinício foi confirmado.`, 500)
+          }
           return json({ ok: true })
         }
         case 'draw': {
