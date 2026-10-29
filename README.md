@@ -126,6 +126,14 @@ O workflow **[Publicar API de Natal no Supabase](https://github.com/DrOtavio/nat
 
 Alternativamente, execute **somente essa nova migração** no SQL Editor e reimplante a função pela CLI/automação existente. Não repita a migração inicial. Confirme o sucesso da implantação do servidor antes de enviar o novo pacote estático ao Cloudflare Pages. Esta atualização não exige modificar contas Auth, segredos no frontend ou `ALLOWED_ORIGINS` se o domínio continuar o mesmo.
 
+### WhatsApp pelo celular e reemissão de convites
+
+No painel, após o sorteio, cada participante agora apresenta **Enviar pelo WhatsApp** quando seu link está carregado. Se o administrador abrir o painel em outro dispositivo, use **Carregar links salvos** com o arquivo confidencial para recuperar os convites sem alterar o sorteio. Se perdeu o arquivo, é possível **Reemitir link para enviar** somente para o participante escolhido; a operação pede confirmação e **invalida o link anterior** dessa pessoa, preservando o par sorteado. Depois de gerar, toque em **Enviar pelo WhatsApp** e salve o novo link no arquivo confidencial.
+
+Essa função depende da migração aditiva `supabase/migrations/20261029030000_reissue_link.sql`, publicada automaticamente com a API pela ação GitHub existente. A rotina de atualização aplica apenas os arquivos fixos de WhatsApp e reemissão, sem apagar cadastros ou resultados. Se o arquivo importado tiver alguns links já reemitidos, os links ainda válidos serão aproveitados e o painel indicará quantos foram substituídos.
+
+A mensagem do WhatsApp agora usa quebras de linha, texto destacado e emojis codificados explicitamente em UTF-8; o usuário continua precisando confirmar o envio. Nunca compartilhe a lista completa dos links com a família.
+
 ## Publicação manual no Cloudflare Pages
 
 O workflow **[Gerar site para Cloudflare Pages](https://github.com/DrOtavio/natal/actions/workflows/build-cloudflare.yml)** agora também executa automaticamente após mudanças de frontend na `main`, além do disparo manual. Ele usa a URL Supabase já configurada e o secret existente `SUPABASE_PUBLISHABLE_KEY`, executa testes e build e disponibiliza o artefato **`natal-oliveira-cloudflare`** por sete dias. Baixe o ZIP na seção **Artifacts** da execução concluída e envie seu conteúdo no Direct Upload do projeto Cloudflare existente. O pacote contém `index.html` na raiz, `assets/`, `fonts/`, a logo, `_headers` e `_redirects`. A atualização de WhatsApp requer também a implantação do servidor descrita acima; não exige reiniciar o evento.
