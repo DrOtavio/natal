@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 64" role="img" aria-labelledby="title desc">
+  <title id="title">Natal da Família Oliveira</title>
+  <desc id="desc">Pinheiro dourado em um círculo verde ao lado do nome da família.</desc>
+  <circle cx="28" cy="32" r="26" fill="#283f36"/>
+  <path d="m28 12 10 15h-5l10 14H31v10h-6V41H13l10-14h-5Z" fill="none" stroke="#e3c38a" stroke-linejoin="round" stroke-width="1.8"/>
+  <path d="m28 8 1.2 2.8 3 .3-2.3 2 .6 3-2.5-1.6-2.5 1.6.6-3-2.3-2 3-.3Z" fill="#e3c38a"/>
+  <text x="68" y="24" fill="#283f36" font-family="Segoe UI,Arial,sans-serif" font-size="10" font-weight="600" letter-spacing="2.4">NATAL DA</text>
+  <text x="68" y="49" fill="#283f36" font-family="Georgia,serif" font-size="25">Família Oliveira</text>
+</svg>

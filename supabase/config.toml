@@ -1,0 +1,7 @@
+project_id = "natal-familia-oliveira"
+
+[functions.christmas-api]
+# Endpoints públicos e privados compartilham a função; os privados validam o JWT
+# com auth.getUser() e a lista de administradores dentro do handler.
+verify_jwt = false
+entrypoint = "./functions/christmas-api/index.ts"
