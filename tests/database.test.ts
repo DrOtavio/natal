@@ -144,6 +144,44 @@ describe('migração e transações PostgreSQL', () => {
     expect((await db.query('select token_hash from public.assignments where giver_id = $1', [a])).rows[0].token_hash).toBe('a'.repeat(64))
   })
 
+  it('reinicia somente o sorteio preservando cadastros e dicas, sem alterar admins', async () => {
+    await seed()
+    await db.query('select public.complete_draw($1::jsonb)', [JSON.stringify(assignments)])
+    await db.query("select public.reset_christmas_event('draw', 'REINICIAR')")
+    expect((await db.query('select count(*)::integer as count from public.assignments')).rows[0].count).toBe(0)
+    expect((await db.query('select name, wishlist from public.participants order by name')).rows).toEqual([
+      { name: 'Ana', wishlist: 'Livros' },
+      { name: 'Bia', wishlist: 'Chocolate' },
+    ])
+    expect((await db.query('select registration_open, drawn_at from public.christmas_event')).rows[0]).toEqual({
+      registration_open: true, drawn_at: null,
+    })
+    expect((await db.query('select public.reveal_assignment($1) as reveal', ['a'.repeat(64)])).rows[0].reveal).toBeNull()
+  })
+
+  it('reinicia todos os inscritos apenas com confirmação administrativa', async () => {
+    await seed()
+    await db.query('select public.complete_draw($1::jsonb)', [JSON.stringify(assignments)])
+    await expect(db.query("select public.reset_christmas_event('all', 'ERRADO')")).rejects.toMatchObject({ code: '22023' })
+    expect((await db.query('select count(*)::integer as count from public.assignments')).rows[0].count).toBe(2)
+    await db.query("select public.reset_christmas_event('all', 'REINICIAR')")
+    expect((await db.query('select count(*)::integer as count from public.assignments')).rows[0].count).toBe(0)
+    expect((await db.query('select count(*)::integer as count from public.participants')).rows[0].count).toBe(0)
+    expect((await db.query('select registration_open, drawn_at from public.christmas_event')).rows[0]).toEqual({
+      registration_open: true, drawn_at: null,
+    })
+  })
+
+  it('migração de reset é idempotente e indisponível aos clientes públicos', async () => {
+    await db.exec(migrations[1])
+    for (const role of ['anon', 'authenticated']) {
+      await db.exec(`set role ${role}`)
+      try {
+        await expect(db.query("select public.reset_christmas_event('draw', 'REINICIAR')")).rejects.toMatchObject({ code: '42501' })
+      } finally { await db.exec('reset role') }
+    }
+  })
+
   it('aplica a migração WhatsApp em uma edição com sorteio existente sem perder dados', async () => {
     const legacy = new PGlite()
     try {
