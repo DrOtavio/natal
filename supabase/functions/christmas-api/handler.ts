@@ -8,6 +8,7 @@ interface DatabaseError { code?: string; message?: string }
 
 function databaseFailure(error: DatabaseError): never {
   // Nunca repassar mensagens SQL, credenciais ou payloads para o cliente/logs.
+  if (error.code === 'PGRST202') throw new RequestError('O banco ainda não recebeu esta atualização administrativa. Publique as migrações do Supabase e tente novamente.', 503)
   if (error.code === '55006') throw new RequestError('Depois do sorteio, não é possível remover participantes. Você ainda pode corrigir o cadastro.', 409)
   if (error.code === 'P0002') throw new RequestError('Este cadastro não foi encontrado. Atualize a lista.', 404)
   if (error.code === '22023' || error.code === '23514') throw new RequestError('Confira os dados do cadastro e tente novamente.', 400)
