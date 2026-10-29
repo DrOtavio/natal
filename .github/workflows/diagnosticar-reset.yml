@@ -1,0 +1,51 @@
+name: Diagnosticar função de reset (somente leitura)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/diagnosticar-reset.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    name: Verificar RPC e permissões sem alterar participantes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_ID: eekiaggyowywtzbgdhbm
+    steps:
+      - name: Conferir RPC real no PostgreSQL (somente SELECT)
+        run: |
+          node --input-type=module <<'NODE'
+          const token = process.env.SUPABASE_ACCESS_TOKEN
+          const project = process.env.SUPABASE_PROJECT_ID
+          if (!token || !project) throw new Error('Configuração Supabase ausente.')
+          const query = `SELECT
+             (to_regprocedure('public.reset_christmas_event(text,text)') IS NOT NULL) AS rpc_exists,
+             COALESCE(has_function_privilege('service_role', to_regprocedure('public.reset_christmas_event(text,text)'), 'EXECUTE'), false) AS service_role_can_execute,
+             COALESCE(has_function_privilege('anon', to_regprocedure('public.reset_christmas_event(text,text)'), 'EXECUTE'), false) AS anonymous_can_execute,
+             COALESCE(has_function_privilege('authenticated', to_regprocedure('public.reset_christmas_event(text,text)'), 'EXECUTE'), false) AS user_can_execute,
+             COALESCE((SELECT prosecdef FROM pg_catalog.pg_proc WHERE oid = to_regprocedure('public.reset_christmas_event(text,text)')), false) AS security_definer,
+             (SELECT COUNT(*) FROM public.christmas_event) AS event_rows,
+             (SELECT COUNT(*) FROM pg_catalog.pg_trigger WHERE tgrelid='public.assignments'::regclass AND NOT tgisinternal) AS assignment_triggers,
+             (SELECT COUNT(*) FROM pg_catalog.pg_constraint WHERE confrelid='public.assignments'::regclass) AS assignment_references`
+          const response = await fetch(`https://api.supabase.com/v1/projects/${project}/database/query`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query }),
+            signal: AbortSignal.timeout(30000),
+          })
+          if (!response.ok) throw new Error(`Consulta de diagnóstico indisponível (HTTP ${response.status})`)
+          const data = await response.json()
+          const row = Array.isArray(data) ? data[0] : data?.data?.[0]
+          if (!row || typeof row.rpc_exists !== 'boolean') throw new Error('Formato inesperado do resultado (dados ocultados).')
+          console.log('Diagnóstico somente leitura:', JSON.stringify(row))
+          if (!row.rpc_exists || !row.service_role_can_execute || row.anonymous_can_execute || row.user_can_execute || !row.security_definer) {
+            throw new Error('RPC de reset não está instalada ou possui permissões inesperadas.')
+          }
+          NODE
