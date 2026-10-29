@@ -25,6 +25,7 @@ export const api = {
   overview: () => request<AdminOverview>('admin-overview'),
   setRegistration: (open: boolean) => request<{ ok: boolean }>('set-registration', { open }),
   draw: () => request<{ links: IndividualLink[] }>('draw'),
+  resetEvent: (mode: 'draw' | 'all', confirmation: string) => request<{ ok: boolean }>('reset-event', { mode, confirmation }),
   reveal: (token: string) => request<RevealResult>('reveal', { token }),
 }
 
