@@ -1,6 +1,17 @@
 name: Gerar site para Cloudflare Pages
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig*.json'
+      - 'vite.config.ts'
+      - '.github/workflows/build-cloudflare.yml'
   workflow_dispatch:
 
 permissions:

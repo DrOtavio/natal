@@ -6,6 +6,14 @@ Base de uma aplicação de amigo secreto com **React, Vite, TypeScript, Tailwind
 
 A identidade visual está em `public/logo-natal-oliveira.svg`, integrada ao cabeçalho com texto alternativo “Natal da Família Oliveira”. O ícone e a ilustração usam a mesma paleta verde, vinho e dourado, sem dependência de imagens externas.
 
+## Design e acessibilidade
+
+O frontend usa verde floresta `#12372A`, vinho `#7A1F2B`, dourado `#C9A227` e off-white `#F7F3EA`. A logo original foi preservada. Cormorant Garamond e Manrope são servidas localmente em WOFF2; suas licenças OFL acompanham `public/fonts/`. Não há requisições a serviços externos de fontes ou imagens.
+
+Gradientes, vidro translúcido, luzes difusas, brilho dos botões e a abertura do presente usam CSS e SVG. As animações movimentam transformações e opacidade. O scroll reveal observa cada elemento uma vez e mantém o conteúdo visível quando `prefers-reduced-motion` está ativo ou `IntersectionObserver` não está disponível. A revelação só anima após uma resposta bem-sucedida da API, move o foco para o resultado e mostra a pessoa imediatamente com movimento reduzido. As telas são carregadas sob demanda por rota.
+
+O redesign não modifica banco, migrações, Edge Functions, sorteio, autenticação nem contratos de API. A verificação visual foi feita com respostas simuladas, sem inscrições, sorteios ou reinícios reais.
+
 ## Executar
 
 Requer Node.js 24 LTS (veja `.nvmrc`) e npm.
@@ -101,6 +109,10 @@ O painel confirma a sessão no servidor e consulta `admins`. Um usuário apenas 
 As tabelas têm RLS habilitado e privilégios revogados para `anon` e `authenticated`. As funções `SECURITY DEFINER` também têm execução pública revogada; somente `service_role` pode executá-las. O handler valida o JWT real com `auth.getUser()` e a lista administrativa antes das operações privadas. `verify_jwt = false` no gateway permite as operações públicas e o uso de publishable keys; **não** desabilita a validação dentro do handler. CORS restringe as origens do navegador, mas não substitui autorização nem impede chamadas fora do navegador.
 
 ## Publicação manual no Cloudflare Pages
+
+O workflow **[Gerar site para Cloudflare Pages](https://github.com/DrOtavio/natal/actions/workflows/build-cloudflare.yml)** agora também executa automaticamente após mudanças de frontend na `main`, além do disparo manual. Ele usa a URL Supabase já configurada e o secret existente `SUPABASE_PUBLISHABLE_KEY`, executa testes e build e disponibiliza o artefato **`natal-oliveira-cloudflare`** por sete dias. Baixe o ZIP na seção **Artifacts** da execução concluída e envie seu conteúdo no Direct Upload do projeto Cloudflare existente. O pacote contém `index.html` na raiz, `assets/`, `fonts/`, a logo, `_headers` e `_redirects`. Nenhuma implantação de API ou migração é necessária para aplicar apenas este redesign.
+
+Para gerar o pacote localmente:
 
 1. Configure o Supabase e os dois valores públicos em `.env.local` **na máquina onde será feito o build**.
 2. Execute `npm install` (ou `npm ci`), `npm test` e `npm run build`.

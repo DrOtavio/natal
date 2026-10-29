@@ -1,8 +1,10 @@
+import { lazy } from 'react'
 import { Link, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
-import { HomePage } from './pages/HomePage'
-import { AdminPage } from './pages/AdminPage'
-import { RevealPage } from './pages/RevealPage'
+
+const HomePage = lazy(() => import('./pages/HomePage').then((page) => ({ default: page.HomePage })))
+const AdminPage = lazy(() => import('./pages/AdminPage').then((page) => ({ default: page.AdminPage })))
+const RevealPage = lazy(() => import('./pages/RevealPage').then((page) => ({ default: page.RevealPage })))
 
 export function App() {
   return (

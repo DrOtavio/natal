@@ -1,26 +1,30 @@
-import { Heart, LockKeyhole } from 'lucide-react'
+import { Suspense } from 'react'
+import { ArrowUpRight, Heart, LockKeyhole } from 'lucide-react'
 import { Link, Outlet } from 'react-router-dom'
 
 export function Layout() {
   return (
-    <div className="min-h-screen">
+    <div className="site-layout">
       <a href="#conteudo" className="skip-link">Pular para o conteúdo</a>
-      <header className="border-b border-forest/10 bg-cream">
-        <div className="page-shell flex min-h-24 flex-wrap items-center justify-between gap-4 py-5">
-          <Link to="/" className="flex items-center" aria-label="Natal da Família Oliveira, início">
-            <img src="/logo-natal-oliveira.svg" width="300" height="64" alt="Natal da Família Oliveira" className="h-12 w-auto" />
+      <header className="site-header">
+        <div className="page-shell header-inner">
+          <Link to="/" className="brand-link" aria-label="Natal da Família Oliveira, início">
+            <img src="/logo-natal-oliveira.svg" width="300" height="64" alt="Natal da Família Oliveira" className="brand-logo" />
           </Link>
-          <nav className="flex items-center gap-5 text-sm" aria-label="Principal">
-            <a href="/#como-funciona" className="hidden text-muted hover:text-forest sm:inline">Como funciona</a>
-            <a href="/#inscricao" className="button button-small">Quero participar <Heart size={15} /></a>
+          <nav className="header-nav" aria-label="Principal">
+            <a href="/#como-funciona" className="nav-link">Como funciona</a>
+            <a href="/#inscricao" className="button button-small">Quero participar <ArrowUpRight size={15} aria-hidden="true" /></a>
           </nav>
         </div>
       </header>
-      <main id="conteudo"><Outlet /></main>
-      <footer className="mt-20 border-t border-forest/10">
-        <div className="page-shell flex flex-wrap items-center justify-between gap-5 py-8 text-sm text-muted">
-          <p className="flex items-center gap-2"><Heart size={14} className="text-wine" /> Feito para celebrar quem faz parte da nossa história.</p>
-          <Link to="/admin" className="flex items-center gap-2 hover:text-forest"><LockKeyhole size={14} /> Área da organização</Link>
+      <main id="conteudo" tabIndex={-1}><Suspense fallback={<p className="page-shell py-16 text-sm text-muted" role="status">Preparando nosso encontro…</p>}><Outlet /></Suspense></main>
+      <footer className="site-footer">
+        <div className="page-shell">
+          <div className="footer-top">
+            <div><p className="eyebrow footer-eyebrow">Natal da Família Oliveira</p><p className="footer-message">O que nos une é o nosso<br /><em>melhor presente.</em></p></div>
+            <div className="footer-links"><a href="/#como-funciona">Como funciona <ArrowUpRight size={14} aria-hidden="true" /></a><a href="/#inscricao">Fazer minha inscrição <ArrowUpRight size={14} aria-hidden="true" /></a><Link to="/admin"><LockKeyhole size={14} aria-hidden="true" /> Área da organização</Link></div>
+          </div>
+          <div className="footer-bottom"><p><Heart size={13} aria-hidden="true" /> Feito para celebrar quem faz parte da nossa história.</p><span>Uma família. Infinitas memórias.</span></div>
         </div>
       </footer>
     </div>

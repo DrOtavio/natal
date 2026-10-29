@@ -4,6 +4,7 @@ import { Check, Copy, Download, Gift, LockKeyhole, LogOut, RefreshCw, RotateCcw,
 import { api, errorMessage, individualUrl } from '../lib/api'
 import { supabase } from '../lib/supabase'
 import type { AdminOverview, IndividualLink } from '../types'
+import { ScrollReveal } from '../components/ScrollReveal'
 
 function LoginForm() {
   const [busy, setBusy] = useState(false)
@@ -23,9 +24,11 @@ function LoginForm() {
   }
 
   return (
-    <section className="page-shell py-16">
-      <form onSubmit={login} className="paper-card mx-auto max-w-md p-8">
-        <LockKeyhole size={28} className="mb-5 text-wine" /><p className="eyebrow text-muted">Só para a organização</p><h1 className="mt-3 font-display text-3xl">Cuidando de cada detalhe.</h1><p className="mb-7 mt-4 text-sm leading-7 text-muted">Entre com sua conta administrativa para acompanhar as inscrições e realizar o sorteio.</p>
+    <section className="private-stage">
+      <div className="page-shell login-layout">
+      <ScrollReveal className="login-story"><p className="eyebrow text-wine">Por trás de cada encontro</p><h2>Um Natal especial<br />começa com <em>cuidado.</em></h2><p>Cada nome na lista, cada surpresa e cada detalhe fazem parte da nossa história. Este é o espaço de quem ajuda tudo a acontecer.</p><div className="gold-rule" aria-hidden="true" /><span className="login-note"><LockKeyhole size={15} aria-hidden="true" /> Um espaço reservado à organização.</span></ScrollReveal>
+      <form onSubmit={login} className="paper-card login-card" aria-label="Acesso da organização" aria-busy={busy}>
+        <span className="login-lock"><LockKeyhole size={23} strokeWidth={1.4} aria-hidden="true" /></span><p className="eyebrow text-muted">Só para a organização</p><h1 className="mt-3 font-display text-3xl">Cuidando de cada detalhe.</h1><p className="mb-7 mt-4 text-sm leading-7 text-muted">Entre com sua conta administrativa para acompanhar as inscrições e realizar o sorteio.</p>
         {!supabase && <p className="notice mb-5">A conexão com a organização ainda está sendo preparada.</p>}
         <fieldset disabled={!supabase || busy} className="space-y-5 disabled:opacity-50">
           <label className="field-label" htmlFor="admin-email">E-mail<input className="text-input" id="admin-email" name="email" type="email" autoComplete="username" maxLength={254} required /></label>
@@ -35,6 +38,7 @@ function LoginForm() {
         {error && <p role="alert" className="mt-5 text-sm text-wine">{error}</p>}
         <p className="mt-6 text-xs leading-6 text-muted">O acesso é exclusivo para contas autorizadas. Sua sessão termina ao recarregar ou fechar a página.</p>
       </form>
+      </div>
     </section>
   )
 }
@@ -123,11 +127,11 @@ function Dashboard() {
   }
 
   return (
-    <section className="page-shell py-12">
-      <div className="flex flex-wrap items-center justify-between gap-5"><div><p className="eyebrow text-wine">Área privada</p><h1 className="mt-3 font-display text-4xl">A magia começa nos detalhes.</h1></div><button className="button button-secondary button-small" onClick={() => void logout()}><LogOut size={15} /> Sair</button></div>
+    <section className="page-shell dashboard">
+      <div className="dashboard-header flex flex-wrap items-center justify-between gap-5"><div><p className="eyebrow text-wine">Área privada</p><h1 className="mt-3 font-display text-4xl">A magia começa nos detalhes.</h1></div><button className="button button-secondary button-small" onClick={() => void logout()}><LogOut size={15} /> Sair</button></div>
       {error && <p role="alert" className="notice mt-7 text-wine">{error}</p>}
       {!overview ? <div className="paper-card mt-8 p-8"><p className="text-muted">{error ? 'Não foi possível carregar o painel.' : 'Consultando as inscrições…'}</p>{error && <button className="button button-small mt-5" onClick={() => void refresh()}>Tentar novamente</button>}</div> : <>
-        <div className="my-8 grid gap-5 sm:grid-cols-3">
+        <div className="dashboard-stats my-8 grid gap-5 sm:grid-cols-3">
           <div className="paper-card p-6"><Users size={22} className="mb-3 text-wine" /><p className="font-display text-3xl">{overview.participantCount}</p><p className="mt-1 text-sm text-muted">Pessoas inscritas</p></div>
           <div className="paper-card p-6"><LockKeyhole size={22} className="mb-3 text-wine" /><p className="font-display text-3xl">{overview.registrationOpen ? 'Abertas' : 'Encerradas'}</p><p className="mt-1 text-sm text-muted">Inscrições</p></div>
           <div className="paper-card p-6"><Gift size={22} className="mb-3 text-wine" /><p className="font-display text-3xl">{overview.drawn ? 'Realizado' : 'Aguardando'}</p><p className="mt-1 text-sm text-muted">Sorteio do amigo secreto</p></div>
@@ -138,7 +142,7 @@ function Dashboard() {
           {confirmDraw && !overview.drawn && <div className="notice mt-6"><p className="font-semibold">Confirma o sorteio com {overview.participantCount} participantes?</p><p className="mt-2">As inscrições serão encerradas. Os links secretos aparecerão uma única vez: salve o arquivo antes de fechar a página.</p><div className="mt-4 flex flex-wrap gap-3"><button className="button button-small" disabled={busy} onClick={() => void runDraw()}>{busy ? 'Sorteando com segurança…' : 'Confirmar sorteio'}</button><button className="button button-secondary button-small" disabled={busy} onClick={() => setConfirmDraw(false)}>Cancelar</button></div></div>}
         </div>
         {links.length > 0 && <section className="paper-card mb-8 border-gold p-6 sm:p-8" aria-label="Links individuais confidenciais"><div className="flex flex-wrap items-center justify-between gap-4"><h2 className="font-display text-2xl">Cada segredo, no seu lugar.</h2><button className="button button-small" onClick={downloadLinks}><Download size={15} /> Baixar links confidenciais</button></div><p className="my-5 text-sm leading-7 text-wine">Compartilhe cada link somente com a pessoa indicada. Quem tiver o link poderá ver a revelação. Guarde o arquivo em local privado; ele não poderá ser recuperado no painel.</p><ul className="divide-y divide-forest/10">{links.map((link) => <li key={link.id} className="flex items-center justify-between gap-3 py-4"><div className="min-w-0"><p className="break-words font-medium">{link.name}</p><p className="break-all text-xs text-muted">{link.email}</p></div><button className="button button-secondary button-small shrink-0" onClick={() => void copy(link)} aria-label={`Copiar link de ${link.name}`}>{copied === link.id ? <Check size={15} /> : <Copy size={15} />}{copied === link.id ? 'Copiado' : 'Copiar link'}</button></li>)}</ul></section>}
-        <section className="paper-card mb-8 border border-red-300/60 p-6 sm:p-8" aria-label="Manutenção do evento">
+        <section className="paper-card maintenance-card mb-8 p-6 sm:p-8" aria-label="Manutenção do evento">
           <p className="eyebrow text-wine">Zona de manutenção</p>
           <h2 className="mt-3 font-display text-2xl">Reiniciar o evento</h2>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-muted">

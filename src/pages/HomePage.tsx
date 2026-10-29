@@ -1,6 +1,8 @@
-import { ArrowDown, Gift, Heart, LockKeyhole, Sparkles, UserRoundPlus } from 'lucide-react'
+import { ArrowDown, ArrowUpRight, Gift, Heart, LockKeyhole, Sparkles, UserRoundPlus } from 'lucide-react'
 import { ChristmasArt } from '../components/ChristmasArt'
+import { FestiveLights } from '../components/FestiveLights'
 import { RegistrationForm } from '../components/RegistrationForm'
+import { ScrollReveal } from '../components/ScrollReveal'
 
 const steps = [
   { number: '01', icon: UserRoundPlus, title: 'Entre na brincadeira', text: 'Faça sua inscrição e deixe uma dica de presente para ajudar quem tirar você.' },
@@ -11,25 +13,36 @@ const steps = [
 export function HomePage() {
   return (
     <>
-      <section className="page-shell grid items-center gap-9 pb-20 pt-12 lg:grid-cols-[1.1fr_1fr] lg:pb-24 lg:pt-16">
-        <div>
-          <p className="eyebrow mb-6 flex items-center gap-2 text-wine"><Sparkles size={16} /> É tempo de celebrar nossas histórias</p>
-          <h1 className="font-display text-[clamp(3.25rem,7vw,5.6rem)] leading-[1.06] tracking-tight text-forest">O melhor presente<br />é <span className="italic text-wine">estar junto.</span></h1>
-          <p className="mt-6 max-w-lg text-lg leading-relaxed text-muted">O Natal da Família Oliveira começa aqui. Vamos trocar sorrisos, criar memórias e guardar um segredinho até a hora do abraço.</p>
-          <div className="mt-8 flex flex-wrap items-center gap-6"><a href="#inscricao" className="button">Participar do amigo secreto <Gift size={17} /></a><a href="#como-funciona" className="flex items-center gap-2 text-sm text-muted hover:text-forest">Conheça a brincadeira <ArrowDown size={15} /></a></div>
-          <p className="mt-7 flex items-center gap-2 text-xs tracking-wide text-muted"><Heart size={13} className="text-wine" /> Para a nossa família. Com todo o carinho.</p>
+      <section className="hero" aria-labelledby="hero-title">
+        <FestiveLights />
+        <div className="page-shell hero-grid">
+          <div className="hero-copy">
+            <p className="eyebrow hero-eyebrow"><span /> É tempo de celebrar nossas histórias</p>
+            <h1 id="hero-title">O melhor presente<br />é <em>estar junto.</em></h1>
+            <p className="hero-description">O Natal da Família Oliveira começa aqui. Vamos trocar sorrisos, criar memórias e guardar um segredinho até a hora do abraço.</p>
+            <div className="hero-actions"><a href="#inscricao" className="button button-gold">Participar do amigo secreto <ArrowUpRight size={18} aria-hidden="true" /></a><a href="#como-funciona" className="hero-more">Conheça a brincadeira <ArrowDown size={15} aria-hidden="true" /></a></div>
+            <p className="hero-note"><Heart size={14} aria-hidden="true" /> Para a nossa família. Com todo o carinho.</p>
+          </div>
+          <ChristmasArt />
         </div>
-        <ChristmasArt />
+        <div className="hero-bottom page-shell"><span>ENCONTROS QUE VIRAM MEMÓRIAS</span><span className="hero-bottom-center"><Sparkles size={13} aria-hidden="true" /> Nosso amigo secreto</span><a href="#como-funciona" aria-label="Descobrir como funciona"><ArrowDown size={17} aria-hidden="true" /></a></div>
       </section>
-      <div className="border-y border-forest/10 bg-sage/60 py-5"><p className="page-shell text-center font-display text-lg text-forest sm:text-xl">De todas as tradições, reunir a nossa família é a mais bonita. <span aria-hidden="true" className="ml-2 text-gold-dark">✧</span></p></div>
-      <section id="como-funciona" className="page-shell scroll-mt-8 py-20">
-        <div className="mb-10 text-center"><p className="eyebrow text-wine">Simples como um abraço</p><h2 className="mt-3 font-display text-4xl text-forest">Um pouco de mistério. Muito afeto.</h2></div>
-        <div className="grid gap-6 md:grid-cols-3">{steps.map(({ number, icon: Icon, title, text }) => <article className="rounded-2xl border border-forest/10 bg-white/45 p-7" key={number}><div className="mb-6 flex items-center justify-between"><span className="grid size-11 place-items-center rounded-xl bg-sage text-forest"><Icon size={21} strokeWidth={1.5} /></span><span className="font-display text-3xl text-gold-dark/60">{number}</span></div><h3 className="font-display text-2xl text-forest">{title}</h3><p className="mt-3 text-sm leading-7 text-muted">{text}</p></article>)}</div>
+
+      <div className="tradition-band"><p className="page-shell"><span aria-hidden="true">✧</span> De todas as tradições, reunir a nossa família é a mais bonita. <span aria-hidden="true">✧</span></p></div>
+
+      <section id="como-funciona" className="page-shell steps-section" aria-labelledby="steps-title">
+        <ScrollReveal className="section-heading"><p className="eyebrow text-wine">Simples como um abraço</p><h2 id="steps-title">Um pouco de mistério.<br className="sm:hidden" /> <em>Muito afeto.</em></h2><p>Três pequenos passos para uma grande lembrança.</p></ScrollReveal>
+        <div className="steps-grid">{steps.map(({ number, icon: Icon, title, text }) => <ScrollReveal key={number}><article className="step-card"><div className="step-card-top"><span className="step-icon"><Icon size={23} strokeWidth={1.4} aria-hidden="true" /></span><span className="step-number" aria-hidden="true">{number}</span></div><span className="step-rule" aria-hidden="true" /><h3>{title}</h3><p>{text}</p></article></ScrollReveal>)}</div>
       </section>
-      <section id="inscricao" className="page-shell grid scroll-mt-8 gap-10 lg:grid-cols-[0.85fr_1fr] lg:gap-20">
-        <div className="py-4 lg:py-10"><p className="eyebrow text-wine">Tem lugar para você</p><h2 className="mt-4 font-display text-4xl leading-tight text-forest sm:text-5xl">Seu nome na lista.<br />Seu carinho na festa.</h2><p className="mt-6 max-w-md leading-8 text-muted">A parte mais especial não cabe no embrulho. É saber que, mais uma vez, vamos celebrar juntos.</p><div className="my-8 h-px w-16 bg-gold" /><div className="space-y-5 text-sm text-muted"><p className="flex gap-3"><Gift size={19} className="shrink-0 text-wine" /> O valor do presente será combinado pela família.</p><p className="flex gap-3"><LockKeyhole size={19} className="shrink-0 text-forest" /> Seu amigo secreto só aparece no seu link individual.</p><p className="flex gap-3"><Heart size={19} className="shrink-0 text-wine" /> Data e local serão compartilhados pela organização.</p></div><p className="mt-10 font-display text-2xl italic text-forest">Que a nossa melhor tradição continue.</p></div>
-        <RegistrationForm />
+
+      <section id="inscricao" className="registration-section" aria-labelledby="registration-title">
+        <div className="page-shell registration-grid">
+          <ScrollReveal className="registration-copy"><p className="eyebrow text-wine">Tem lugar para você</p><h2 id="registration-title">Seu nome na lista.<br /><em>Seu carinho na festa.</em></h2><p className="registration-intro">A parte mais especial não cabe no embrulho. É saber que, mais uma vez, vamos celebrar juntos.</p><div className="gold-rule" aria-hidden="true" /><ul className="registration-details"><li><Gift size={19} aria-hidden="true" /><span>O valor do presente será combinado pela família.</span></li><li><LockKeyhole size={19} aria-hidden="true" /><span>Seu amigo secreto só aparece no seu link individual.</span></li><li><Heart size={19} aria-hidden="true" /><span>Data e local serão compartilhados pela organização.</span></li></ul><p className="registration-signature">Que a nossa melhor tradição continue.</p><span className="registration-flourish" aria-hidden="true">✧</span></ScrollReveal>
+          <ScrollReveal className="registration-form-wrap"><RegistrationForm /></ScrollReveal>
+        </div>
       </section>
+
+      <ScrollReveal className="closing-note page-shell"><span className="closing-star" aria-hidden="true">✧</span><p>Os presentes são só o começo.<br /><em>O que fica é o carinho.</em></p><span className="eyebrow">Que venha mais um Natal juntos</span></ScrollReveal>
     </>
   )
 }
