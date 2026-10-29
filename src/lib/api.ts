@@ -42,7 +42,7 @@ export function individualUrl(token: string): string {
   const url = new URL('/revelar', window.location.origin)
   // O fragmento não é enviado ao servidor estático nem aos logs do Cloudflare.
   // A versão pública força o WhatsApp a buscar a nova prévia OG; o token continua só no #fragmento.
-  url.searchParams.set('v', '2')
+  url.searchParams.set('v', '3')
   url.hash = new URLSearchParams({ token }).toString()
   return url.toString()
 }
