@@ -1,0 +1,43 @@
+name: Publicar logo transparente
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/remove-logo-background.py'
+      - '.github/workflows/publicar-logo-transparente.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: publicar-logo-transparente
+  cancel-in-progress: false
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Baixar repositório com permissão de escrita
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Instalar biblioteca de imagem
+        run: python -m pip install --quiet Pillow numpy opencv-python-headless
+      - name: Extrair transparência da logo original
+        run: python scripts/remove-logo-background.py
+      - name: Verificar arquivo gerado e publicar
+        run: |
+          test -s public/logo-natal-familia-oliveira-transparente.webp
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/logo-natal-familia-oliveira-transparente.webp
+          if git diff --cached --quiet; then
+            echo "Logo já está atualizada."
+            exit 0
+          fi
+          git commit -m "assets: publicar emblema da família com fundo transparente"
+          git pull --rebase origin main
+          git push origin HEAD:main
