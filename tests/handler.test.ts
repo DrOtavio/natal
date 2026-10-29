@@ -203,6 +203,22 @@ describe('fronteiras da API', () => {
     expect(response.headers.get('Cache-Control')).toBe('no-store')
   })
 
+  it('recupera links válidos de arquivo parcialmente revogado sem reativar tokens antigos', async () => {
+    const ctx = setup()
+    ctx.auth.getUser.mockResolvedValue({ data: { user: { id: 'admin' } }, error: null })
+    ctx.from.mockReturnValue({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { user_id: 'admin' }, error: null }) }) }) })
+    const tokens = ['a'.repeat(43), 'b'.repeat(43)]
+    ctx.rpc.mockImplementation(async (_name, args) => ({
+      data: [{ giver_id: 'a', token_hash: args.p_token_hashes[0], name: 'Ana', whatsapp: '5511999991111' }],
+      error: null,
+    }))
+    const response = await ctx.handle(post({ action: 'restore-links', tokens }, { Authorization: 'Bearer admin' }))
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.skipped).toBe(1)
+    expect(body.links).toEqual([{ id: 'a', name: 'Ana', whatsapp: '5511999991111', token: tokens[0] }])
+  })
+
   it('recusa links antigos, duplicados, vazios ou malformados na importação', async () => {
     const ctx = setup()
     ctx.auth.getUser.mockResolvedValue({ data: { user: { id: 'admin' } }, error: null })
