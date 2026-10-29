@@ -129,6 +129,19 @@ export function createHandler({ db, allowedOrigins }: Dependencies) {
             return { id: person.giver_id, name: person.name, whatsapp: person.whatsapp, token }
           }) })
         }
+        case 'reissue-link': {
+          await requireAdmin(request)
+          const id = parseParticipantId(body.id)
+          if (body.confirmation !== 'REEMITIR') throw new RequestError('Confirme a reemissão do convite.', 400)
+          const token = createToken()
+          const { error } = await db.rpc('admin_reissue_link', {
+            p_giver_id: id,
+            p_token_hash: await hashToken(token),
+          })
+          if (error) databaseFailure(error)
+          // Apenas o novo token sai nesta resposta e não fica armazenado em texto puro.
+          return json({ token })
+        }
         case 'set-registration': {
           await requireAdmin(request)
           if (typeof body.open !== 'boolean') throw new RequestError('Informe se as inscrições devem ser abertas.')
