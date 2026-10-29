@@ -463,3 +463,432 @@
   .participant-actions .button-secondary { flex: 1 1 calc(50% - 10px); }
   .invite-actions .button-whatsapp { flex: 1 1 100%; min-height: 50px; font-size: 13px; }
 }
+
+
+/* ================================================================
+   OLIVEIRA CHRISTMAS — EMERALD / RUBY / GOLD
+   Dark premium visual refresh. No behavior, auth or API changes.
+   ================================================================ */
+:root {
+  --color-muted: #b5cbbc;
+  --color-gold-dark: #e9c879;
+  --oliveira-ink: #061811;
+  --oliveira-forest: #0c2a1d;
+  --oliveira-emerald: #27b977;
+  --oliveira-ruby: #c7374a;
+  --oliveira-gold: #f2c867;
+  --oliveira-text: #f2f8ee;
+  --oliveira-muted: #b5cbbc;
+}
+body { background: var(--oliveira-ink); color: var(--oliveira-text); }
+.site-layout {
+  background:
+    radial-gradient(ellipse 65% 31% at 75% 15%, #135b383d, transparent 85%),
+    linear-gradient(165deg, #071811, #081e16 55%, #06140f);
+}
+.site-layout > main { min-width: 0; }
+.text-muted { color: var(--oliveira-muted); }
+.text-wine { color: #ef9ba1; }
+.text-forest { color: #e8f6e8; }
+:focus-visible { outline-color: #f2c867; }
+::selection { background: #b8943c; color: #0b2115; }
+
+/* No beige strip: same midnight forest as the hero. */
+.site-header {
+  position: relative;
+  z-index: 4;
+  color: #f3f8ec;
+  background: linear-gradient(100deg, #071a13 0%, #0b2c1d 54%, #102619 100%);
+  border-bottom: 1px solid #e7c56f38;
+  box-shadow: 0 12px 32px #02100940, inset 0 -1px 0 #2ecf8940;
+}
+.site-header::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  left: 9%;
+  right: 9%;
+  bottom: -1px;
+  height: 1px;
+  opacity: .8;
+  background: linear-gradient(90deg, transparent, #47d48f91 22%, #f5c96bb0 52%, #ad334b8a 78%, transparent);
+  box-shadow: 0 0 15px #2ac9857c;
+}
+.header-inner { min-height: 116px; }
+.brand-link { min-width: 0; gap: 15px; color: #f6f7e9; }
+.brand-mark {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 100px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+.brand-mark::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 15%;
+  border-radius: 50%;
+  background: conic-gradient(from 30deg, #f2cb63b3, #0ab67da6, #b6244c93, #f2cb63b3);
+  filter: blur(20px);
+  opacity: .8;
+  animation: brand-glow-breathe 5s ease-in-out infinite alternate;
+}
+.brand-logo {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: contain;
+  mix-blend-mode: screen;
+  filter: saturate(1.14) contrast(1.08) drop-shadow(0 0 8px #e1a84765);
+}
+.brand-name { gap: 3px; text-shadow: 0 1px 14px #01150a; }
+.brand-name > span { color: #edce82; letter-spacing: .27em; }
+.brand-name strong { color: #f5f7eb; font-size: 29px; text-shadow: 0 0 25px #cba9493d; }
+.nav-link { color: #e0efde; }
+.nav-link::after { background: #edcd7b; box-shadow: 0 0 12px #d9b852a3; }
+.header-nav .button {
+  color: #0b2919;
+  border: 1px solid #ffe9a77a;
+  background: linear-gradient(110deg, #ffe09b, #edb74d 55%, #d99936);
+  box-shadow: 0 4px 22px #e6b24f36, inset 0 1px 0 #fff5c3b6;
+}
+.header-nav .button:not(:disabled):hover { box-shadow: 0 3px 28px #eec56f78; }
+
+/* Cinematic hero with a transparent-looking dark-background emblem. */
+.hero {
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 32% 57% at 87% 45%, #1977505c, transparent 88%),
+    radial-gradient(ellipse 35% 58% at 98% 80%, #8c1c3d5c, transparent 80%),
+    radial-gradient(ellipse 50% 40% at 35% 92%, #18623a40, transparent 88%),
+    linear-gradient(110deg, #061912 3%, #0c3021 55%, #071a14);
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  inset: 0;
+  background: radial-gradient(circle at 60% 45%, #f3ce7015, transparent 42%);
+  z-index: -1;
+}
+.hero-grid { grid-template-columns: 1fr 1.13fr; gap: 15px; padding-top: 14px; padding-bottom: 12px; }
+.hero-copy { padding-block: 40px; }
+.hero h1 { color: #f6f7ee; text-shadow: 0 3px 30px #0009; }
+.hero h1 em { color: #f3d184; text-shadow: 0 0 40px #f0c2633f; }
+.hero-eyebrow { color: #e9cb81; }
+.hero-description { color: #d2e7d6; }
+.hero-note { color: #b6d4c1; }
+.hero-more { color: #e0eddc; }
+.hero-bottom { border-top-color: #d8c77434; color: #c5e1c7; }
+.hero-bottom > a { color: #ebd38e; }
+.festive-lights span { opacity: .5; }
+
+/* Emblem replaces the original Christmas tree. Keep all faces and lettering. */
+.christmas-art.family-emblem {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  max-width: 605px;
+  aspect-ratio: 1;
+  margin: 0 auto;
+  animation: emblem-enter 900ms cubic-bezier(.18,.75,.22,1) both;
+}
+.family-emblem::before {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: -2;
+  inset: 9%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #12543480 0%, #083b2955 36%, transparent 74%);
+  box-shadow: 0 0 110px #159a633c;
+}
+.emblem-aura { position: absolute; z-index: -1; border-radius: 50%; pointer-events: none; }
+.emblem-aura-green {
+  inset: 7% 8% 11%;
+  background: radial-gradient(circle, #2de29a65 0%, #1fa56c25 37%, transparent 69%);
+  filter: blur(32px);
+  animation: aura-ebb 7s ease-in-out infinite alternate;
+}
+.emblem-aura-wine {
+  inset: 25% -4% 7% 32%;
+  background: radial-gradient(ellipse, #de315a69, #be24511f 50%, transparent 76%);
+  filter: blur(30px);
+  animation: aura-ebb 9s ease-in-out -4s infinite alternate-reverse;
+}
+.emblem-aura-gold {
+  inset: 1% 20% 37%;
+  background: radial-gradient(ellipse, #ffd66d83 0%, #f1b83c26 46%, transparent 79%);
+  filter: blur(27px);
+  animation: aura-ebb 6s ease-in-out -2s infinite alternate;
+}
+.emblem-orbit {
+  position: absolute;
+  inset: 8%;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.emblem-orbit-outer {
+  border: 1px solid #edd18146;
+  box-shadow: 0 0 28px #c5a24c45, inset 0 0 25px #0bb3732b;
+  transform: rotate(-13deg) scaleX(.93);
+}
+.emblem-orbit-inner {
+  inset: 13%;
+  border: 1px dashed #35bd8059;
+  transform: rotate(11deg) scaleX(.96);
+  box-shadow: 0 0 24px #1eb37830;
+}
+.emblem-logo-wrap {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  animation: emblem-float 6s ease-in-out infinite;
+  will-change: transform;
+}
+.emblem-logo {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  /* The existing asset has a near-black background; screen lets the forest shine through. */
+  mix-blend-mode: screen;
+  filter: saturate(1.16) contrast(1.08) drop-shadow(0 12px 26px #031008a8);
+}
+.emblem-star { position: absolute; z-index: 3; color: #ffe9a6; pointer-events: none; text-shadow: 0 0 8px #fff5c8, 0 0 20px #f4b744b3; animation: star-twinkle 3.5s ease-in-out infinite alternate; }
+.emblem-star-one { top: 17%; left: 11%; font-size: 23px; }
+.emblem-star-two { top: 12%; right: 14%; font-size: 28px; animation-delay: -1s; }
+.emblem-star-three { bottom: 21%; right: 1%; font-size: 16px; animation-delay: -2s; }
+.emblem-star-four { bottom: 25%; left: 5%; font-size: 20px; animation-delay: -1.5s; }
+.emblem-ground-glow {
+  position: absolute;
+  z-index: -1;
+  bottom: 5%;
+  width: 75%;
+  height: 8%;
+  background: #13b57870;
+  filter: blur(36px);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Eliminate beige sections: luminous glass on deep emerald. */
+.tradition-band {
+  color: #f2e5bd;
+  background: linear-gradient(90deg, #09251a, #16452a 48%, #2b181c);
+  border-block: 1px solid #e5ba6236;
+  box-shadow: inset 0 1px 0 #3ac58623, inset 0 -1px 0 #bf34402b;
+}
+.tradition-band span { color: #f9d67e; }
+.steps-section { color: var(--oliveira-text); }
+.section-heading h2 em, .closing-note p em, .registration-copy h2 em,
+.login-story h2 em { color: #f5c96e; text-shadow: 0 0 24px #d9ae4442; }
+.section-heading > p:last-child { color: #b6d2bc; }
+.step-card {
+  color: #f1f7ee;
+  border: 1px solid #a5d8aa31;
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 93% 0, #c8a43a19, transparent 45%),
+    linear-gradient(143deg, #17432dcb, #08241bcf);
+  box-shadow: 0 22px 45px #02130c54, inset 0 1px 0 #d2f8e020;
+}
+.step-card h3 { color: #fbf5dc; }
+.step-card > p { color: #b9d2bd; }
+.step-icon {
+  color: #f4d27f;
+  border: 1px solid #e1bb5b47;
+  background: linear-gradient(135deg, #245c3d, #0c3326);
+  box-shadow: 0 0 22px #16bc7733;
+}
+.steps-grid > div:nth-child(2) .step-icon {
+  color: #ffabb2;
+  border-color: #e35a764a;
+  background: #582130aa;
+}
+.step-number { color: #dcb45c99; }
+.step-rule { background: linear-gradient(90deg, #47d794, #e9bd58); box-shadow: 0 0 10px #32bd7988; }
+.registration-section {
+  border-block: 1px solid #f2c76d3b;
+  background:
+    radial-gradient(ellipse 35% 53% at 1% 35%, #1b835d3f, transparent),
+    radial-gradient(ellipse 40% 63% at 100% 75%, #a926413c, transparent),
+    linear-gradient(135deg, #0c2a1d, #082018 68%, #141b18);
+}
+.registration-copy { color: #f4f6e8; }
+.registration-intro, .registration-details li { color: #c4dac8; }
+.registration-details svg { color: #f0c36a; }
+.registration-details li:nth-child(2) svg { color: #7df0ac; }
+.registration-signature { color: #f0cf87; }
+.registration-flourish { color: #f4c769; }
+.gold-rule { height: 2px; background: linear-gradient(90deg, #37bc80, #f1c668); box-shadow: 0 0 15px #39bd7b7a; }
+.paper-card {
+  color: #f3f7ec;
+  border: 1px solid #7fe9ab38;
+  background: linear-gradient(145deg, #194331ed, #0b251de8);
+  box-shadow: 0 18px 55px #010e0a73, inset 0 1px 0 #d3f9db1e;
+  backdrop-filter: blur(10px);
+}
+.registration-form {
+  border: 1px solid #e9c66b76;
+  background: linear-gradient(140deg, #184c35f5, #0a251bf7 78%);
+  box-shadow: 0 26px 65px #021109a8, 0 0 38px #25b97729, inset 0 1px 0 #f1d89920;
+}
+.form-heading { border-bottom-color: #e2c4763f; }
+.form-icon, .login-card > .login-lock {
+  color: #f3d58c;
+  background: #1b5037;
+  border: 1px solid #e8be6861;
+  box-shadow: 0 0 20px #e4bb6030;
+}
+.form-heading p { color: #b8d4c2; }
+.field-label { color: #e6f2e6; }
+.text-input {
+  color: #f6faf4;
+  background: #041d15a3;
+  border: 1px solid #8eddb35b;
+  caret-color: #f3d083;
+  box-shadow: inset 0 1px 4px #00000035;
+}
+.text-input::placeholder { color: #b6c9bd; opacity: .9; }
+.text-input:focus {
+  color: #fff;
+  background: #0a2d20;
+  border-color: #eace79;
+  box-shadow: 0 0 0 3px #f2c96d27, 0 0 22px #31c88a36;
+}
+.field-hint { color: #b6cfbe; }
+.notice {
+  color: #f9edce;
+  background: #173b2b;
+  border: 1px solid #e3bf6770;
+  box-shadow: inset 0 1px 0 #ffffff11;
+}
+.button { box-shadow: 0 6px 25px #ad294948, inset 0 1px 0 #fff3ad38; }
+.button-gold {
+  color: #0c271a;
+  border: 1px solid #ffe79c88;
+  background: linear-gradient(115deg, #ffe8a8, #f2cb66 54%, #d69e33);
+  box-shadow: 0 7px 29px #e9ba5470, inset 0 1px 0 #ffffffa3;
+}
+.button-secondary {
+  color: #f2ead0;
+  border: 1px solid #d6b76b66;
+  background: #12402d8f;
+  box-shadow: inset 0 1px 0 #ffffff11;
+}
+.button-whatsapp {
+  color: #fff;
+  background: linear-gradient(125deg, #16965c, #0b6c41);
+  border-color: #9df9b261;
+}
+.closing-note { color: #ebf6e7; }
+.closing-star { color: #f0c66b; text-shadow: 0 0 19px #e7bd6fa3; }
+.closing-note > .eyebrow { color: #afd4b3; }
+.site-footer {
+  border-top: 1px solid #d9bd7445;
+  background: radial-gradient(ellipse at 7% 95%, #28774443, transparent 52%), linear-gradient(155deg, #071710, #0a2a1b);
+}
+
+/* Match dashboard and login with the site, never a bright beige card. */
+.private-stage {
+  color: #f1f7ee;
+  background:
+    radial-gradient(ellipse at 9% 12%, #2c92553e, transparent 55%),
+    radial-gradient(ellipse at 92% 80%, #9f26433f, transparent 58%),
+    #071d15;
+}
+.login-story > p:not(.eyebrow), .login-note { color: #c2d8c4; }
+.dashboard { color: #f1f7ee; }
+.dashboard-header { border-bottom-color: #e6c16c3d; }
+.dashboard-stats > .paper-card::after { background: radial-gradient(circle, #eac16e36, transparent 68%); }
+.dashboard tbody tr:hover { background: #2cb66b12; }
+.maintenance-card {
+  border: 1px solid #a04a5980;
+  background: linear-gradient(140deg, #352321e8, #172f25f4);
+}
+.participant-row, .invite-row { border-top-color: #b8d99a35; }
+.participant-contact p, .participant-wishlist p { color: #c4d9c8; }
+.participant-name h3, .invite-row .font-semibold { color: #fff5de; }
+.dashboard-stats .text-wine { color: #edc975; }
+.dashboard-stats .paper-card { box-shadow: 0 10px 32px #020f0a57; }
+.reveal-stage {
+  background:
+    radial-gradient(ellipse at 50% 20%, #29ae6e43, transparent 63%),
+    radial-gradient(ellipse at 5% 90%, #9e22454f, transparent 52%), #081d15;
+}
+.reveal-card { border-color: #e9ca6c68; box-shadow: 0 25px 90px #0008, 0 0 42px #26ba6930; }
+.wishlist-card { background: #061b15a6; border-color: #dfbd786b; }
+.reveal-error { color: #ffebdf; border-color: #f3a4a47a; background: #6a203fbd; }
+
+/* Stronger hover treatment, without motion dependence on mobile. */
+@media (hover: hover) {
+  .button-secondary:not(:disabled):hover { color: #ffe8ac; background: #206444a8; border-color: #f0ce7eb3; box-shadow: 0 0 16px #28b86e30; }
+  .step-card:hover { border-color: #e9c66b8a; box-shadow: 0 18px 55px #00190f8a, 0 0 24px #17b37b42; }
+  .brand-link:hover .brand-mark::before { opacity: 1; }
+}
+
+@keyframes emblem-enter {
+  from { opacity: 0; transform: translate3d(0, 18px, 0) scale(.95); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+@keyframes emblem-float {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -10px, 0); }
+}
+@keyframes aura-ebb {
+  from { opacity: .58; transform: scale(.93); }
+  to { opacity: 1; transform: scale(1.12); }
+}
+@keyframes star-twinkle {
+  from { opacity: .2; transform: scale(.75) rotate(-12deg); }
+  to { opacity: 1; transform: scale(1.1) rotate(10deg); }
+}
+@keyframes brand-glow-breathe {
+  from { transform: scale(.85); opacity: .65; }
+  to { transform: scale(1.1); opacity: 1; }
+}
+
+@media (max-width: 1023px) {
+  .hero-grid { grid-template-columns: 1fr 1fr; gap: 0; padding-block: 22px; }
+  .family-emblem.christmas-art { max-width: 480px; }
+  .header-inner { min-height: 105px; }
+}
+@media (max-width: 767px) {
+  .header-inner { min-height: 92px; gap: 12px; }
+  .brand-mark { width: 77px; }
+  .brand-name strong { font-size: 23px; }
+  .header-nav .button { min-height: 43px; padding-inline: 12px; font-size: 11px; }
+  .hero-grid { grid-template-columns: 1fr; gap: 0; padding-block: 32px 12px; }
+  .hero-copy { padding-block: 5px 0; }
+  .family-emblem.christmas-art { max-width: 435px; margin-top: 10px; }
+  .registration-form { backdrop-filter: none; }
+  .step-card { backdrop-filter: none; }
+  .steps-section { padding-block: 64px; }
+}
+@media (max-width: 520px) {
+  .brand-name { display: none; }
+  .brand-mark { width: 77px; }
+  .header-nav .button { font-size: 11px; }
+  .hero h1 { font-size: clamp(2.8rem, 11.7vw, 4rem); }
+  .family-emblem.christmas-art { max-width: 390px; }
+  .emblem-orbit-outer { inset: 11%; }
+}
+@media (max-width: 360px) {
+  .brand-mark { width: 70px; }
+  .header-nav .button { font-size: 10px; padding-inline: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .family-emblem.christmas-art,
+  .emblem-logo-wrap, .emblem-aura, .emblem-star, .brand-mark::before { animation: none !important; }
+  .emblem-logo-wrap, .emblem-aura { transform: none !important; }
+}
