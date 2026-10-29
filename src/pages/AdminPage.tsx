@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useState, type SubmitEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type SubmitEvent } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { Check, Copy, Download, Gift, LockKeyhole, LogOut, RefreshCw, RotateCcw, Trash2, Users } from 'lucide-react'
+import { Check, Copy, Download, Gift, LockKeyhole, LogOut, MessageCircle, Pencil, RefreshCw, RotateCcw, Trash2, Upload, Users } from 'lucide-react'
 import { api, errorMessage, individualUrl } from '../lib/api'
 import { supabase } from '../lib/supabase'
-import type { AdminOverview, IndividualLink } from '../types'
+import type { AdminOverview, IndividualLink, Participant } from '../types'
 import { ScrollReveal } from '../components/ScrollReveal'
+import { AdminDialog } from '../components/AdminDialog'
+import { ParticipantEditor, type ParticipantUpdate } from '../components/ParticipantEditor'
+import { formatWhatsApp, tokensFromSavedLinks, whatsappShareUrl } from '../lib/whatsapp'
 
 function LoginForm() {
   const [busy, setBusy] = useState(false)
@@ -52,6 +55,10 @@ function Dashboard() {
   const [copied, setCopied] = useState('')
   const [resetMode, setResetMode] = useState<'draw' | 'all' | null>(null)
   const [resetConfirmation, setResetConfirmation] = useState('')
+  const [editPerson, setEditPerson] = useState<Participant | null>(null)
+  const [deletePerson, setDeletePerson] = useState<Participant | null>(null)
+  const [participantError, setParticipantError] = useState('')
+  const importInput = useRef<HTMLInputElement>(null)
 
   const refresh = useCallback(async () => {
     setError('')
@@ -105,13 +112,56 @@ function Dashboard() {
     finally { setBusy(false) }
   }
 
+  async function saveParticipant(data: ParticipantUpdate) {
+    if (busy) return
+    setBusy(true)
+    setParticipantError('')
+    try {
+      await api.updateParticipant(data)
+      setOverview((current) => current ? { ...current, participants: current.participants.map((person) => person.id === data.id ? { ...person, ...data } : person) } : current)
+      setLinks((current) => current.map((link) => link.id === data.id ? { ...link, name: data.name, whatsapp: data.whatsapp } : link))
+      await refresh()
+      setEditPerson(null)
+    } catch (err) { setParticipantError(errorMessage(err)) }
+    finally { setBusy(false) }
+  }
+
+  async function removeParticipant() {
+    if (busy || !deletePerson) return
+    setBusy(true)
+    setParticipantError('')
+    try {
+      await api.deleteParticipant(deletePerson.id)
+      setOverview((current) => current ? { ...current, participantCount: current.participantCount - 1, participants: current.participants.filter((person) => person.id !== deletePerson.id) } : current)
+      await refresh()
+      setDeletePerson(null)
+    } catch (err) { setParticipantError(errorMessage(err)) }
+    finally { setBusy(false) }
+  }
+
   async function copy(link: IndividualLink) {
     try { await navigator.clipboard.writeText(individualUrl(link.token)); setCopied(link.id) }
     catch { setError('Não foi possível copiar. Baixe o arquivo de links para compartilhar.') }
   }
 
+  async function importLinks(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0]
+    event.currentTarget.value = ''
+    if (!file || busy) return
+    setBusy(true)
+    setError('')
+    try {
+      if (file.size > 128 * 1024) throw new Error('Use o arquivo de links original, com até 128 KB.')
+      const tokens = tokensFromSavedLinks(await file.text())
+      const result = await api.restoreLinks(tokens)
+      setLinks((current) => [...new Map([...current, ...result.links].map((link) => [link.id, link])).values()])
+      await refresh()
+    } catch (err) { setError(errorMessage(err)) }
+    finally { setBusy(false) }
+  }
+
   function downloadLinks() {
-    const text = ['NATAL DA FAMÍLIA OLIVEIRA — LINKS CONFIDENCIAIS', 'Envie cada link somente à pessoa indicada. Não compartilhe este arquivo em grupos.', '', ...links.map((link) => `${link.name} <${link.email}>\n${individualUrl(link.token)}\n`)].join('\n')
+    const text = ['NATAL DA FAMÍLIA OLIVEIRA — LINKS CONFIDENCIAIS', 'Envie cada link somente à pessoa indicada. Não compartilhe este arquivo em grupos.', '', ...links.map((link) => { const person = overview?.participants.find((participant) => participant.id === link.id) ?? link; return `${person.name} — ${formatWhatsApp(person.whatsapp)}\n${individualUrl(link.token)}\n` })].join('\n')
     const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }))
     const anchor = document.createElement('a')
     anchor.href = url
@@ -136,12 +186,36 @@ function Dashboard() {
           <div className="paper-card p-6"><LockKeyhole size={22} className="mb-3 text-wine" /><p className="font-display text-3xl">{overview.registrationOpen ? 'Abertas' : 'Encerradas'}</p><p className="mt-1 text-sm text-muted">Inscrições</p></div>
           <div className="paper-card p-6"><Gift size={22} className="mb-3 text-wine" /><p className="font-display text-3xl">{overview.drawn ? 'Realizado' : 'Aguardando'}</p><p className="mt-1 text-sm text-muted">Sorteio do amigo secreto</p></div>
         </div>
-        <div className="paper-card mb-8 p-6 sm:p-8"><h2 className="font-display text-2xl">O grande momento</h2><p className="mt-3 max-w-3xl text-sm leading-7 text-muted">O sorteio é feito no servidor: ninguém tira a si mesmo e cada pessoa recebe um único amigo secreto. Depois de concluído, não pode ser refeito por este painel.</p>
-          {overview.drawn ? <p className="notice mt-5">{links.length ? 'Sorteio concluído. Salve os links abaixo antes de sair.' : 'Sorteio já realizado. Use o arquivo confidencial salvo pela organização. Os links não ficam armazenados no painel.'}</p> : <div className="mt-6 flex flex-wrap gap-3"><button className="button" disabled={busy || overview.participantCount < 2} onClick={() => setConfirmDraw(true)}><Gift size={17} /> Realizar sorteio</button><button className="button button-secondary" disabled={busy} onClick={() => void toggleRegistration()}>{overview.registrationOpen ? 'Pausar inscrições' : 'Reabrir inscrições'}</button></div>}
+        <div className="paper-card mb-8 p-6 sm:p-8"><h2 className="font-display text-2xl">O grande momento</h2><p className="mt-3 max-w-3xl text-sm leading-7 text-muted">Cada participante recebe um único amigo secreto e ninguém tira a si mesmo. Os convites são individuais e devem ser compartilhados em particular.</p>
+          {overview.drawn ? <p className="notice mt-5">{links.length ? 'Sorteio concluído. Salve os links abaixo antes de sair.' : 'Sorteio já realizado. Carregue o arquivo confidencial salvo pela organização para preparar as mensagens no WhatsApp.'}</p> : <div className="mt-6 flex flex-wrap gap-3"><button className="button" disabled={busy || overview.participantCount < 2} onClick={() => setConfirmDraw(true)}><Gift size={17} /> Realizar sorteio</button><button className="button button-secondary" disabled={busy} onClick={() => void toggleRegistration()}>{overview.registrationOpen ? 'Pausar inscrições' : 'Reabrir inscrições'}</button></div>}
           {!overview.drawn && overview.participantCount < 2 && <p className="mt-4 text-sm text-muted">É preciso ter pelo menos duas pessoas inscritas.</p>}
           {confirmDraw && !overview.drawn && <div className="notice mt-6"><p className="font-semibold">Confirma o sorteio com {overview.participantCount} participantes?</p><p className="mt-2">As inscrições serão encerradas. Os links secretos aparecerão uma única vez: salve o arquivo antes de fechar a página.</p><div className="mt-4 flex flex-wrap gap-3"><button className="button button-small" disabled={busy} onClick={() => void runDraw()}>{busy ? 'Sorteando com segurança…' : 'Confirmar sorteio'}</button><button className="button button-secondary button-small" disabled={busy} onClick={() => setConfirmDraw(false)}>Cancelar</button></div></div>}
         </div>
-        {links.length > 0 && <section className="paper-card mb-8 border-gold p-6 sm:p-8" aria-label="Links individuais confidenciais"><div className="flex flex-wrap items-center justify-between gap-4"><h2 className="font-display text-2xl">Cada segredo, no seu lugar.</h2><button className="button button-small" onClick={downloadLinks}><Download size={15} /> Baixar links confidenciais</button></div><p className="my-5 text-sm leading-7 text-wine">Compartilhe cada link somente com a pessoa indicada. Quem tiver o link poderá ver a revelação. Guarde o arquivo em local privado; ele não poderá ser recuperado no painel.</p><ul className="divide-y divide-forest/10">{links.map((link) => <li key={link.id} className="flex items-center justify-between gap-3 py-4"><div className="min-w-0"><p className="break-words font-medium">{link.name}</p><p className="break-all text-xs text-muted">{link.email}</p></div><button className="button button-secondary button-small shrink-0" onClick={() => void copy(link)} aria-label={`Copiar link de ${link.name}`}>{copied === link.id ? <Check size={15} /> : <Copy size={15} />}{copied === link.id ? 'Copiado' : 'Copiar link'}</button></li>)}</ul></section>}
+        <input ref={importInput} type="file" accept=".txt,text/plain" className="hidden" aria-label="Arquivo confidencial de links" onChange={(event) => void importLinks(event)} />
+        {overview.drawn && <div className="mb-7 flex flex-wrap items-center gap-4"><button type="button" className="button button-secondary button-small" disabled={busy} onClick={() => importInput.current?.click()}><Upload size={15} aria-hidden="true" />{busy ? 'Aguarde…' : 'Carregar links salvos'}</button><p className="max-w-xl text-xs leading-6 text-muted">Use o arquivo baixado após o sorteio. Os convites serão associados às pessoas certas, sem refazer o sorteio.</p></div>}
+        {links.length > 0 && <section className="paper-card mb-8 border-gold p-6 sm:p-8" aria-label="Links individuais confidenciais">
+          <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="eyebrow text-wine">Um convite para cada pessoa</p><h2 className="mt-2 font-display text-3xl">Cada segredo, no seu lugar.</h2></div><button className="button button-small" onClick={downloadLinks}><Download size={15} aria-hidden="true" /> Baixar links confidenciais</button></div>
+          <p className="my-5 text-sm leading-7 text-muted">O botão abre uma conversa com o nome e o link daquela pessoa na mensagem. Confira e toque em enviar no WhatsApp. Mesmo com números repetidos, cada participante recebe um convite separado.</p>
+          <p className="notice mb-4 text-wine">Salve o arquivo antes de sair ou atualizar a página. Os links estão disponíveis somente nesta sessão. Quem receber um link poderá abrir a revelação daquela pessoa.</p>
+          <ul className="invite-list">{links.map((link) => {
+            const person = overview.participants.find((participant) => participant.id === link.id) ?? link
+            const shareUrl = whatsappShareUrl(person.whatsapp, person.name, individualUrl(link.token))
+            return <li key={link.id} className="invite-row" data-participant-id={link.id}>
+              <div className="min-w-0"><p className="break-words font-semibold">{person.name}</p><p className="mt-1 text-xs text-muted">{formatWhatsApp(person.whatsapp)}</p>{!shareUrl && <p className="mt-2 text-xs text-wine">Edite o cadastro para informar o WhatsApp.</p>}</div>
+              <div className="invite-actions">{shareUrl ? <a className="button button-whatsapp button-small" href={shareUrl} target="_blank" rel="noopener noreferrer" aria-label={`Abrir WhatsApp para ${person.name}`}><MessageCircle size={16} aria-hidden="true" /> Abrir WhatsApp</a> : <button type="button" className="button button-whatsapp button-small" disabled><MessageCircle size={16} aria-hidden="true" /> Abrir WhatsApp</button>}<button className="button button-secondary button-small" onClick={() => void copy(link)} aria-label={`Copiar link de ${person.name}`}>{copied === link.id ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}{copied === link.id ? 'Copiado' : 'Copiar link'}</button></div>
+            </li>
+          })}</ul>
+        </section>}
+        <section className="paper-card mb-8 overflow-hidden" aria-label="Participantes inscritos">
+          <div className="flex flex-wrap items-center justify-between gap-4 p-6"><div><p className="eyebrow text-wine">A nossa lista de presenças</p><h2 className="mt-2 font-display text-3xl" tabIndex={-1} data-participants-heading>Quem vem celebrar</h2></div><button className="button button-secondary button-small" disabled={busy} onClick={() => void refresh()} aria-label="Atualizar participantes"><RefreshCw size={15} aria-hidden="true" /></button></div>
+          {overview.drawn && <p id="participant-removal-note" className="mx-6 mb-5 text-xs leading-6 text-muted">Depois do sorteio, você pode corrigir nomes, números e dicas. A remoção fica bloqueada para preservar os pares e os links já distribuídos.</p>}
+          {overview.participants.length ? <ul className="participant-list">{overview.participants.map((person) => <li key={person.id} className="participant-row" data-participant-id={person.id}>
+            <div className="participant-name"><span className="eyebrow">Participante</span><h3>{person.name}</h3></div>
+            <div className="participant-contact"><span className="eyebrow">WhatsApp privado</span><p className={!person.whatsapp ? 'text-wine' : ''}>{formatWhatsApp(person.whatsapp)}</p></div>
+            <div className="participant-wishlist"><span className="eyebrow">Dica de presente</span><p>{person.wishlist || 'Ainda sem dica de presente.'}</p></div>
+            <div className="participant-actions"><button type="button" className="button button-secondary button-small" disabled={busy} onClick={() => { setParticipantError(''); setEditPerson(person) }} aria-label={`Editar cadastro de ${person.name}`}><Pencil size={15} aria-hidden="true" /> Editar</button><button type="button" className="button button-secondary button-small button-remove" disabled={busy || overview.drawn} aria-describedby={overview.drawn ? 'participant-removal-note' : undefined} onClick={() => { setParticipantError(''); setDeletePerson(person) }} aria-label={`Remover cadastro de ${person.name}`}><Trash2 size={15} aria-hidden="true" /> Remover</button></div>
+          </li>)}</ul> : <p className="px-6 pb-8 text-sm text-muted">A lista está esperando o primeiro nome da família.</p>}
+        </section>
         <section className="paper-card maintenance-card mb-8 p-6 sm:p-8" aria-label="Manutenção do evento">
           <p className="eyebrow text-wine">Zona de manutenção</p>
           <h2 className="mt-3 font-display text-2xl">Reiniciar o evento</h2>
@@ -175,7 +249,9 @@ function Dashboard() {
             </div>
           </div>}
         </section>
-        <section className="paper-card overflow-hidden" aria-label="Participantes inscritos"><div className="flex items-center justify-between p-6"><h2 className="font-display text-2xl">Quem vem celebrar</h2><button className="button button-secondary button-small" disabled={busy} onClick={() => void refresh()} aria-label="Atualizar participantes"><RefreshCw size={15} /></button></div>{overview.participants.length ? <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-sage text-xs"><tr><th scope="col" className="px-6 py-4 font-medium">Nome</th><th scope="col" className="px-6 py-4 font-medium">E-mail privado</th><th scope="col" className="px-6 py-4 font-medium">Dica de presente</th></tr></thead><tbody className="divide-y divide-forest/10">{overview.participants.map((person) => <tr key={person.id}><td className="min-w-40 break-words px-6 py-4">{person.name}</td><td className="break-all px-6 py-4 text-muted">{person.email}</td><td className="max-w-sm whitespace-pre-wrap break-words px-6 py-4 text-muted">{person.wishlist || '—'}</td></tr>)}</tbody></table></div> : <p className="px-6 pb-8 text-sm text-muted">A lista está esperando o primeiro nome da família.</p>}</section>
+        {editPerson && <ParticipantEditor participant={editPerson} busy={busy} error={participantError} onSave={saveParticipant} onClose={() => { if (!busy) setEditPerson(null) }} />}
+        {deletePerson && <AdminDialog title="Remover este cadastro?" busy={busy} onClose={() => { if (!busy) setDeletePerson(null) }}><p className="text-sm leading-7 text-muted">Você vai remover <strong className="text-forest">{deletePerson.name}</strong> ({formatWhatsApp(deletePerson.whatsapp)}). Os outros cadastros serão mantidos, inclusive os que usam o mesmo WhatsApp.</p><p className="notice mt-5">Esta ação não pode ser desfeita. A pessoa poderá se inscrever novamente enquanto as inscrições estiverem abertas.</p>{participantError && <p className="mt-5 text-sm text-wine" role="alert">{participantError}</p>}<div className="dialog-actions"><button type="button" className="button" disabled={busy} onClick={() => void removeParticipant()}><Trash2 size={16} aria-hidden="true" />{busy ? 'Removendo…' : 'Confirmar remoção'}</button><button type="button" className="button button-secondary" disabled={busy} onClick={() => setDeletePerson(null)}>Cancelar</button></div></AdminDialog>}
+
       </>}
     </section>
   )

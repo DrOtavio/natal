@@ -1,6 +1,13 @@
 name: Publicar API de Natal no Supabase
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/**'
+      - 'supabase/migrations/20261029020000_whatsapp_participants.sql'
+      - '.github/scripts/apply-whatsapp-migration.mjs'
+      - '.github/workflows/deploy-supabase.yml'
   workflow_dispatch:
 
 permissions:
@@ -12,7 +19,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: Implantar christmas-api
+    name: Validar, migrar contatos e implantar christmas-api
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -28,7 +35,8 @@ jobs:
       - name: Preparar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
+          cache: npm
 
       - name: Conferir segredo necessario
         shell: bash
@@ -38,7 +46,16 @@ jobs:
             exit 1
           fi
 
-      - name: Implantar apenas a Edge Function
+      - name: Instalar dependencias e validar antes de alterar o servidor
+        run: |
+          npm ci
+          npm test
+          npm run typecheck
+
+      - name: Aplicar migracao WhatsApp preservando os dados existentes
+        run: node .github/scripts/apply-whatsapp-migration.mjs
+
+      - name: Implantar a Edge Function
         run: npx --yes supabase@2.122.0 functions deploy christmas-api --project-ref "$SUPABASE_PROJECT_ID" --use-api
 
       - name: Listar funcoes publicadas

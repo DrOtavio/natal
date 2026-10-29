@@ -12,7 +12,7 @@ O frontend usa verde floresta `#12372A`, vinho `#7A1F2B`, dourado `#C9A227` e of
 
 Gradientes, vidro translúcido, luzes difusas, brilho dos botões e a abertura do presente usam CSS e SVG. As animações movimentam transformações e opacidade. O scroll reveal observa cada elemento uma vez e mantém o conteúdo visível quando `prefers-reduced-motion` está ativo ou `IntersectionObserver` não está disponível. A revelação só anima após uma resposta bem-sucedida da API, move o foco para o resultado e mostra a pessoa imediatamente com movimento reduzido. As telas são carregadas sob demanda por rota.
 
-O redesign não modifica banco, migrações, Edge Functions, sorteio, autenticação nem contratos de API. A verificação visual foi feita com respostas simuladas, sem inscrições, sorteios ou reinícios reais.
+O redesign visual original não modificou banco, migrações, Edge Functions, sorteio, autenticação nem contratos de API. A funcionalidade de WhatsApp descrita abaixo inclui uma migração própria e novas operações administrativas. A verificação visual foi feita com respostas simuladas, sem inscrições, sorteios ou reinícios reais.
 
 ## Executar
 
@@ -89,11 +89,11 @@ Para desenvolvimento local, rode `npm test` e `npm run build`. A automação Git
 
 | Rota | Uso |
 | --- | --- |
-| `/` | Informações e inscrição pública com nome, e-mail e dica opcional |
+| `/` | Informações e inscrição pública com nome, WhatsApp e dica opcional |
 | `/admin` | Login por Supabase Auth, participantes, pausa de inscrições e sorteio |
 | `/revelar#token=…` | Revelação personalizada mediante um token secreto |
 
-O formulário envia os dados para `christmas-api`. A inscrição é limitada a 200 pessoas por instalação, e o mesmo e-mail não cria duas inscrições. A resposta pública é a mesma para inscrições novas e duplicadas. Os e-mails não são publicados nem enviados ao amigo secreto. **Não há envio automático de e-mail** nesta base: a organização distribui os links em particular.
+O formulário envia os dados para `christmas-api`. A inscrição é limitada a 200 pessoas por instalação. Cada envio cria um participante com ID próprio: o WhatsApp pode se repetir, inclusive para crianças que usam o número dos responsáveis. Nem o número nem e-mails legados são publicados ou enviados ao amigo secreto. **Não há envio automático de mensagens**: o administrador abre o WhatsApp com um texto pronto e confirma o envio no próprio aplicativo.
 
 O painel confirma a sessão no servidor e consulta `admins`. Um usuário apenas autenticado não obtém acesso administrativo. A sessão do painel fica em memória e exige novo login após recarregar a página. A confirmação do sorteio encerra as inscrições de forma atômica. O reinício excepcional por administrador só fica disponível após aplicar a migração adicional de reset e reimplantar a função e o frontend.
 
@@ -102,15 +102,33 @@ O painel confirma a sessão no servidor e consulta `admins`. Um usuário apenas 
 - O servidor utiliza Web Crypto, Fisher–Yates e rejeição de permutações com auto-sorteio. Não usa `Math.random` nem um fallback que altere as probabilidades.
 - Uma transação PostgreSQL trava o evento e valida cobertura completa, participantes únicos, destinatários únicos e ausência de auto-sorteio. Se a lista mudar durante o sorteio, a gravação é recusada. Chamadas posteriores não sobrescrevem um sorteio concluído.
 - Cada link usa 32 bytes aleatórios (256 bits). O banco guarda apenas o hash SHA-256 do token, junto ao par do sorteio.
-- Os tokens são devolvidos **uma única vez** na resposta ao administrador e ficam somente na memória da página. Baixe o arquivo confidencial imediatamente, antes de sair ou atualizar. Não coloque o arquivo no Git nem envie em grupos. Se a resposta for perdida ou os links não forem salvos, esta versão inicial não tem recuperação ou reemissão pelo painel; será necessária uma rotina administrativa de rotação de tokens antes de utilizar o evento novamente. Não apague pares para tentar refazer o sorteio.
+- Os tokens são devolvidos **uma única vez** na resposta ao administrador e ficam somente na memória da página. Baixe o arquivo confidencial imediatamente, antes de sair ou atualizar. Não coloque o arquivo no Git nem envie em grupos. Os botões **Abrir WhatsApp** aparecem ao lado de cada link após o sorteio e preenchem a mensagem com o nome do participante e seu próprio link. Não existe agrupamento pelo número do telefone nem confirmação automática de que a mensagem foi enviada. Depois de recarregar, **Carregar links salvos** aceita o arquivo confidencial antigo ou novo e valida cada token contra o sorteio atual; não depende de nomes, e-mails ou números únicos. Se a resposta for perdida e os links não forem salvos, não há recuperação ou reemissão pelo painel; será necessária uma rotina administrativa de rotação de tokens antes de utilizar o evento novamente. Não apague pares para tentar refazer o sorteio.
 - O token fica no **fragmento** `#token=…`, que não é enviado ao servidor estático do Cloudflare. Na revelação, é enviado por HTTPS no corpo de um POST. As respostas da função usam `Cache-Control: no-store`; o site não carrega analytics ou scripts de terceiros.
 - O link é uma credencial de acesso: qualquer pessoa que o receber poderá abrir a revelação. A organização recebe todos os links e pode abri-los; esta base não oferece sigilo criptográfico contra a própria organização ou o proprietário do banco.
 
 As tabelas têm RLS habilitado e privilégios revogados para `anon` e `authenticated`. As funções `SECURITY DEFINER` também têm execução pública revogada; somente `service_role` pode executá-las. O handler valida o JWT real com `auth.getUser()` e a lista administrativa antes das operações privadas. `verify_jwt = false` no gateway permite as operações públicas e o uso de publishable keys; **não** desabilita a validação dentro do handler. CORS restringe as origens do navegador, mas não substitui autorização nem impede chamadas fora do navegador.
 
+## WhatsApp, edição e remoção de participantes
+
+- Números brasileiros aceitam DDD e pontuação; o país padrão é `+55`. Para outros países, informe `+` e o código internacional. Os números são normalizados para dígitos E.164 tanto no navegador quanto na API.
+- O WhatsApp não é uma chave de cadastro. Irmãos ou outras pessoas podem compartilhar o mesmo número e até o mesmo nome; cada inscrição tem seu próprio ID e seu próprio link.
+- **Inscrever outra pessoa** mantém o último WhatsApp preenchido para facilitar os cadastros da família. Não há persistência desses dados no navegador após fechar a página.
+- O painel permite **Editar** nome, WhatsApp e dica, inclusive depois do sorteio, mantendo IDs, pares e tokens. **Remover** exige confirmação e apaga apenas o participante escolhido; a API e o banco bloqueiam essa ação depois do sorteio para preservar a bijeção.
+- O login de administradores continua usando e-mail e senha do Supabase Auth. As ações privadas exigem JWT válido e presença em `admins`; as novas RPCs continuam exclusivas de `service_role`.
+- Os cadastros antigos são preservados, com seus e-mails legados e WhatsApp inicialmente vazio. Preencha o número usando **Editar** para habilitar o botão do WhatsApp. A revelação nunca inclui contatos.
+- Os links secretos ficam somente em memória. Baixe o arquivo confidencial antes de sair/recarregar e use o domínio definitivo do site. Para continuar em outra sessão, use **Carregar links salvos**: arquivos `.txt` antigos e novos são aceitos, e o servidor valida os tokens e recupera somente os nomes/contatos atuais correspondentes, sem armazenar tokens brutos nem mudar o sorteio. O arquivo exportado identifica separadamente cada participante, mesmo com números repetidos.
+
+### Aplicar esta atualização em um Supabase existente
+
+A migração **`supabase/migrations/20261029020000_whatsapp_participants.sql`** preserva os cadastros existentes, os e-mails legados, o estado das inscrições, todos os pares e os hashes dos tokens. Ela adiciona o WhatsApp e as RPCs de cadastro/edição/remoção, sem reiniciar o evento. É reaplicável e deve ser executada antes da nova versão de `christmas-api`. A versão antiga de cadastro por e-mail é desabilitada pela migração; coordene o upload do novo frontend com essa atualização.
+
+O workflow **[Publicar API de Natal no Supabase](https://github.com/DrOtavio/natal/actions/workflows/deploy-supabase.yml)** executa automaticamente na `main` quando esses arquivos mudam e também pode ser disparado manualmente. Ele usa o secret existente `SUPABASE_ACCESS_TOKEN`: primeiro executa testes e TypeScript, aplica somente essa migração fixa pela API de gerenciamento e implanta `christmas-api`. Se a migração falhar, a implantação da função é interrompida. Não são registrados SQL de erro, credenciais ou dados de participantes nos logs.
+
+Alternativamente, execute **somente essa nova migração** no SQL Editor e reimplante a função pela CLI/automação existente. Não repita a migração inicial. Confirme o sucesso da implantação do servidor antes de enviar o novo pacote estático ao Cloudflare Pages. Esta atualização não exige modificar contas Auth, segredos no frontend ou `ALLOWED_ORIGINS` se o domínio continuar o mesmo.
+
 ## Publicação manual no Cloudflare Pages
 
-O workflow **[Gerar site para Cloudflare Pages](https://github.com/DrOtavio/natal/actions/workflows/build-cloudflare.yml)** agora também executa automaticamente após mudanças de frontend na `main`, além do disparo manual. Ele usa a URL Supabase já configurada e o secret existente `SUPABASE_PUBLISHABLE_KEY`, executa testes e build e disponibiliza o artefato **`natal-oliveira-cloudflare`** por sete dias. Baixe o ZIP na seção **Artifacts** da execução concluída e envie seu conteúdo no Direct Upload do projeto Cloudflare existente. O pacote contém `index.html` na raiz, `assets/`, `fonts/`, a logo, `_headers` e `_redirects`. Nenhuma implantação de API ou migração é necessária para aplicar apenas este redesign.
+O workflow **[Gerar site para Cloudflare Pages](https://github.com/DrOtavio/natal/actions/workflows/build-cloudflare.yml)** agora também executa automaticamente após mudanças de frontend na `main`, além do disparo manual. Ele usa a URL Supabase já configurada e o secret existente `SUPABASE_PUBLISHABLE_KEY`, executa testes e build e disponibiliza o artefato **`natal-oliveira-cloudflare`** por sete dias. Baixe o ZIP na seção **Artifacts** da execução concluída e envie seu conteúdo no Direct Upload do projeto Cloudflare existente. O pacote contém `index.html` na raiz, `assets/`, `fonts/`, a logo, `_headers` e `_redirects`. A atualização de WhatsApp requer também a implantação do servidor descrita acima; não exige reiniciar o evento.
 
 Para gerar o pacote localmente:
 
@@ -145,7 +163,7 @@ Os testes SQL executam a migração em PostgreSQL via PGlite com os papéis de a
 
 Use um projeto Supabase de teste separado, com a mesma migração e função implantadas, e preencha `.env.local` com seus valores públicos:
 
-1. Reinicie `npm run dev`. O formulário deve sair do estado “em preparação”. Inscreva pelo menos duas pessoas fictícias com e-mails diferentes; tente repetir um e-mail e confirme no painel que não houve duplicação.
+1. Reinicie `npm run dev`. O formulário deve sair do estado “em preparação”. Inscreva duas pessoas fictícias com o mesmo WhatsApp e confirme que os cadastros são independentes. Edite o número de uma e confirme que a outra não foi alterada. Remova um terceiro cadastro de teste antes do sorteio e confirme que os outros continuam intactos.
 2. Abra `/admin`. Acesso sem login não deve listar participantes. Uma conta Auth que **não** conste em `admins` deve receber a mensagem de acesso negado. A conta incluída em `admins` deve ver as inscrições.
 3. Pause as inscrições e confirme que um novo envio é recusado; reabra e confirme que volta a aceitar. Use duas sessões ou navegadores para evitar confundir estados já carregados.
 4. No domínio de teste que será usado para abrir os links, confirme o sorteio no painel. Baixe o arquivo confidencial. Verifique no banco que cada participante aparece uma vez como remetente e uma vez como destinatário, e que ninguém tirou a si mesmo.

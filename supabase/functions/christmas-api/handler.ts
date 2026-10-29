@@ -1,13 +1,16 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createToken, drawRecipients, hashToken } from '../_shared/draw.ts'
-import { parseRegistration, parseToken, RequestError } from '../_shared/validation.ts'
+import { parseParticipantId, parseRegistration, parseToken, RequestError } from '../_shared/validation.ts'
 
 interface Dependencies { db: SupabaseClient; allowedOrigins: readonly string[] }
-interface Participant { id: string; name: string; email: string; wishlist: string; created_at: string }
+interface Participant { id: string; name: string; whatsapp: string | null; wishlist: string; created_at: string }
 interface DatabaseError { code?: string; message?: string }
 
 function databaseFailure(error: DatabaseError): never {
   // Nunca repassar mensagens SQL, credenciais ou payloads para o cliente/logs.
+  if (error.code === '55006') throw new RequestError('Depois do sorteio, não é possível remover participantes. Você ainda pode corrigir o cadastro.', 409)
+  if (error.code === 'P0002') throw new RequestError('Este cadastro não foi encontrado. Atualize a lista.', 404)
+  if (error.code === '22023' || error.code === '23514') throw new RequestError('Confira os dados do cadastro e tente novamente.', 400)
   if (error.code === '55000') throw new RequestError('As inscrições estão encerradas ou o sorteio já foi realizado.', 409)
   if (error.code === '40001') throw new RequestError('A lista de participantes mudou. Atualize a página e tente novamente.', 409)
   if (error.code === '54000') throw new RequestError('O evento atingiu o limite de participantes. Fale com a organização.', 409)
@@ -60,7 +63,7 @@ export function createHandler({ db, allowedOrigins }: Dependencies) {
         const { done, value } = await reader.read()
         if (done) break
         size += value.byteLength
-        if (size > 8192) { await reader.cancel(); throw new RequestError('A mensagem é muito grande.', 413) }
+        if (size > 16384) { await reader.cancel(); throw new RequestError('A mensagem é muito grande.', 413) }
         chunks.push(value)
       }
       const buffer = new Uint8Array(size)
@@ -71,23 +74,60 @@ export function createHandler({ db, allowedOrigins }: Dependencies) {
       catch { throw new RequestError('Envie um corpo JSON válido.') }
       if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new RequestError('Mensagem inválida.')
       const body = parsed as Record<string, unknown>
+      if (size > 8192 && body.action !== 'restore-links') throw new RequestError('A mensagem é muito grande.', 413)
 
       switch (body.action) {
         case 'status': return json(await eventStatus())
         case 'register': {
           if (typeof body.website === 'string' && body.website.trim()) return json({ ok: true })
           const participant = parseRegistration(body)
-          const { error } = await db.rpc('register_participant', { p_name: participant.name, p_email: participant.email, p_wishlist: participant.wishlist })
+          const { error } = await db.rpc('register_participant_whatsapp', { p_name: participant.name, p_whatsapp: participant.whatsapp, p_wishlist: participant.wishlist })
           if (error) databaseFailure(error)
-          // Mesmo resultado para e-mail já inscrito; não expõe a lista pública.
+          // Cada inscrição tem seu próprio ID, mesmo quando o WhatsApp se repete.
           return json({ ok: true })
         }
         case 'admin-overview': {
           await requireAdmin(request)
           const status = await eventStatus()
-          const { data, error } = await db.from('participants').select('id, name, email, wishlist, created_at').order('created_at')
+          const { data, error } = await db.from('participants').select('id, name, whatsapp, wishlist, created_at').order('created_at')
           if (error) databaseFailure(error)
           return json({ ...status, participants: data ?? [] })
+        }
+        case 'update-participant': {
+          await requireAdmin(request)
+          const id = parseParticipantId(body.id)
+          const participant = parseRegistration(body)
+          const { error } = await db.rpc('admin_update_participant', { p_id: id, p_name: participant.name, p_whatsapp: participant.whatsapp, p_wishlist: participant.wishlist })
+          if (error) databaseFailure(error)
+          return json({ ok: true })
+        }
+        case 'delete-participant': {
+          await requireAdmin(request)
+          const id = parseParticipantId(body.id)
+          if (body.confirmation !== 'REMOVER') throw new RequestError('Confirme a remoção deste cadastro.')
+          const { error } = await db.rpc('admin_delete_participant', { p_id: id })
+          if (error) databaseFailure(error)
+          return json({ ok: true })
+        }
+        case 'restore-links': {
+          await requireAdmin(request)
+          if (!Array.isArray(body.tokens) || body.tokens.length < 1 || body.tokens.length > 200) {
+            throw new RequestError('Carregue um arquivo com até 200 links individuais.')
+          }
+          const tokens = body.tokens.map(parseToken)
+          if (new Set(tokens).size !== tokens.length) throw new RequestError('O arquivo contém links repetidos.')
+          const hashes = await Promise.all(tokens.map(hashToken))
+          const { data, error } = await db.rpc('admin_restore_links', { p_token_hashes: hashes })
+          if (error) databaseFailure(error)
+          const rows = (data ?? []) as { giver_id: string; token_hash: string; name: string; whatsapp: string | null }[]
+          const byHash = new Map(rows.map((row) => [row.token_hash, row]))
+          if (hashes.some((hash) => !byHash.has(hash))) {
+            throw new RequestError('O arquivo contém links que não pertencem ao sorteio atual. Confira o arquivo salvo pela organização.', 409)
+          }
+          return json({ links: tokens.map((token, index) => {
+            const person = byHash.get(hashes[index])!
+            return { id: person.giver_id, name: person.name, whatsapp: person.whatsapp, token }
+          }) })
         }
         case 'set-registration': {
           await requireAdmin(request)
@@ -110,12 +150,12 @@ export function createHandler({ db, allowedOrigins }: Dependencies) {
         }
         case 'draw': {
           await requireAdmin(request)
-          const { data, error } = await db.from('participants').select('id, name, email, wishlist, created_at').order('id')
+          const { data, error } = await db.from('participants').select('id, name, whatsapp, wishlist, created_at').order('id')
           if (error) databaseFailure(error)
           const participants = (data ?? []) as Participant[]
           if (participants.length < 2) throw new RequestError('Inscreva pelo menos duas pessoas antes do sorteio.')
           const recipients = drawRecipients(participants.map((person) => person.id))
-          const links = participants.map(({ id, name, email }) => ({ id, name, email, token: createToken() }))
+          const links = participants.map(({ id, name, whatsapp }) => ({ id, name, whatsapp, token: createToken() }))
           const assignments = await Promise.all(links.map(async (link, index) => ({
             giver_id: link.id, recipient_id: recipients[index], token_hash: await hashToken(link.token),
           })))

@@ -7,7 +7,7 @@ export interface EventStatus {
 export interface Participant {
   id: string
   name: string
-  email: string
+  whatsapp: string | null
   wishlist: string
   created_at: string
 }
@@ -17,7 +17,7 @@ export interface AdminOverview extends EventStatus { participants: Participant[]
 export interface IndividualLink {
   id: string
   name: string
-  email: string
+  whatsapp: string | null
   token: string
 }
 

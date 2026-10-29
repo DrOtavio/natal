@@ -369,3 +369,49 @@
   .scroll-reveal.reveal-waiting { opacity: 1; transform: none; }
   .button:not(:disabled):hover, .button:not(:disabled):active, .step-card:hover { transform: none; }
 }
+
+/* Contacts are displayed by participant ID, including shared family numbers. */
+.button-whatsapp { background: linear-gradient(125deg, #23513a, #12372a); color: #f7f3ea; }
+.invite-list { display: grid; }
+.invite-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-block: 22px; border-top: 1px solid #12372a12; }
+.invite-actions, .participant-actions { display: flex; flex-wrap: wrap; gap: 8px; flex-shrink: 0; }
+.participant-list { padding-inline: 24px; }
+.participant-row { display: grid; grid-template-columns: 1fr 1fr 1.2fr auto; gap: 24px; align-items: start; padding-block: 26px; border-top: 1px solid #12372a12; }
+.participant-row > div { min-width: 0; }
+.participant-row .eyebrow { display: block; color: var(--color-muted); font-size: 8px; letter-spacing: .12em; }
+.participant-name h3 { margin-top: 7px; font-family: var(--font-display); font-size: 25px; line-height: 1.15; overflow-wrap: anywhere; }
+.participant-contact p, .participant-wishlist p { margin-top: 10px; color: var(--color-muted); font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }
+.participant-contact p.text-wine { color: var(--color-wine); }
+.participant-wishlist p { white-space: pre-wrap; }
+.participant-actions { flex-direction: column; align-items: stretch; }
+.button-remove { color: var(--color-wine); border-color: #7a1f2b30; }
+.admin-dialog { position: fixed; inset: 0; width: calc(100% - 40px); max-width: 560px; max-height: calc(100svh - 48px); margin: auto; padding: 30px; overflow-y: auto; color: var(--color-forest); background: #fcfaf4; border: 1px solid #fff; border-radius: 17px; box-shadow: 0 30px 100px #001d1370; }
+.admin-dialog[open] { animation: state-enter .25s ease both; }
+.admin-dialog::backdrop { background: #071f18a6; backdrop-filter: blur(5px); }
+.admin-dialog-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; margin-bottom: 23px; }
+.admin-dialog-header h2 { margin-top: 10px; font-family: var(--font-display); font-size: 35px; line-height: 1.05; }
+.dialog-close { display: grid; width: 44px; height: 44px; place-items: center; flex-shrink: 0; border: 1px solid #12372a1c; border-radius: 50%; color: var(--color-forest); }
+.dialog-close:disabled { cursor: not-allowed; opacity: .55; }
+.dialog-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 27px; }
+@media (hover: hover) {
+  .button-whatsapp:not(:disabled):hover { box-shadow: 0 7px 25px #12372a29; }
+  .button-remove:not(:disabled):hover { background-color: #7a1f2b08; border-color: #7a1f2b55; }
+}
+@media (max-width: 1023px) {
+  .participant-row { grid-template-columns: 1fr 1fr; gap: 22px; }
+  .participant-actions { flex-direction: row; align-items: center; align-self: end; }
+}
+@media (max-width: 767px) {
+  .invite-row { align-items: flex-start; flex-direction: column; gap: 15px; }
+  .invite-actions { width: 100%; }
+  .invite-actions .button { flex: 1; padding-inline: 12px; }
+  .participant-row { grid-template-columns: 1fr; gap: 17px; }
+  .participant-wishlist { padding-block: 13px; border-block: 1px solid #12372a0a; }
+  .participant-contact p, .participant-wishlist p { margin-top: 5px; font-size: 13px; }
+  .participant-actions .button { flex: 1; }
+  .admin-dialog { padding: 24px; }
+  .admin-dialog-header h2 { font-size: 32px; }
+  .dialog-actions .button { width: 100%; }
+}
+/* Keep the dialogs' entrance static when the system requests less movement. */
+@media (prefers-reduced-motion: reduce) { .admin-dialog[open] { animation: none; } }

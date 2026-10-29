@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'src/**'
+      - 'supabase/functions/_shared/whatsapp.ts'
       - 'public/**'
       - 'index.html'
       - 'package.json'

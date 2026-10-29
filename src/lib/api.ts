@@ -21,7 +21,11 @@ async function request<T>(action: string, payload: Record<string, unknown> = {})
 
 export const api = {
   status: () => request<EventStatus>('status'),
-  register: (data: { name: string; email: string; wishlist: string; website: string }) => request<{ ok: boolean }>('register', data),
+  // UI values use E.164 digits. The + keeps international codes unambiguous in validation.
+  register: (data: { name: string; whatsapp: string; wishlist: string; website: string }) => request<{ ok: boolean }>('register', { ...data, whatsapp: `+${data.whatsapp}` }),
+  updateParticipant: (data: { id: string; name: string; whatsapp: string; wishlist: string }) => request<{ ok: boolean }>('update-participant', { ...data, whatsapp: `+${data.whatsapp}` }),
+  deleteParticipant: (id: string) => request<{ ok: boolean }>('delete-participant', { id, confirmation: 'REMOVER' }),
+  restoreLinks: (tokens: string[]) => request<{ links: IndividualLink[] }>('restore-links', { tokens }),
   overview: () => request<AdminOverview>('admin-overview'),
   setRegistration: (open: boolean) => request<{ ok: boolean }>('set-registration', { open }),
   draw: () => request<{ links: IndividualLink[] }>('draw'),
