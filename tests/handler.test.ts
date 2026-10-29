@@ -80,6 +80,43 @@ describe('fronteiras da API', () => {
     expect(ctx.rpc).toHaveBeenCalledWith('admin_reset_event_v2', { p_mode: mode, p_confirmation: 'REINICIAR' })
   })
 
+  it.each(['draw', 'all'] as const)('reseta via PostgreSQL direto somente após validar o administrador e o modo %s', async (mode) => {
+    const ctx = setup()
+    const resetEventDirect = vi.fn().mockResolvedValue({ ok: true, mode, assignmentsRemoved: 2, participantsRemoved: 0 })
+    const handle = createHandler({
+      db: { auth: ctx.auth, from: ctx.from, rpc: ctx.rpc } as unknown as SupabaseClient,
+      allowedOrigins: ['https://natal.example.com'],
+      resetEventDirect,
+    })
+    expect((await handle(post({ action: 'reset-event', mode, confirmation: 'REINICIAR' }))).status).toBe(401)
+    expect(resetEventDirect).not.toHaveBeenCalled()
+    ctx.auth.getUser.mockResolvedValue({ data: { user: { id: 'admin' } }, error: null })
+    ctx.from.mockReturnValue({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { user_id: 'admin' }, error: null }) }) }) })
+    const headers = { Authorization: 'Bearer valid-admin-token' }
+    expect((await handle(post({ action: 'reset-event', mode, confirmation: 'ERRADO' }, headers))).status).toBe(400)
+    expect(resetEventDirect).not.toHaveBeenCalled()
+    const response = await handle(post({ action: 'reset-event', mode, confirmation: 'REINICIAR' }, headers))
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ ok: true })
+    expect(resetEventDirect).toHaveBeenCalledExactlyOnceWith(mode, 'REINICIAR')
+    expect(ctx.rpc).not.toHaveBeenCalled()
+  })
+
+  it('falha fechado quando a consulta PostgreSQL direta não confirma o reset', async () => {
+    const ctx = setup()
+    ctx.auth.getUser.mockResolvedValue({ data: { user: { id: 'admin' } }, error: null })
+    ctx.from.mockReturnValue({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { user_id: 'admin' }, error: null }) }) }) })
+    const resetEventDirect = vi.fn().mockResolvedValue({ ok: false, mode: 'draw' })
+    const handle = createHandler({
+      db: { auth: ctx.auth, from: ctx.from, rpc: ctx.rpc } as unknown as SupabaseClient,
+      allowedOrigins: ['https://natal.example.com'],
+      resetEventDirect,
+    })
+    const response = await handle(post({ action: 'reset-event', mode: 'draw', confirmation: 'REINICIAR' }, { Authorization: 'Bearer admin' }))
+    expect(response.status).toBe(500)
+    expect(ctx.rpc).not.toHaveBeenCalled()
+  })
+
   it('informa migração ausente quando o reset tenta usar uma RPC não instalada', async () => {
     const ctx = setup()
     ctx.auth.getUser.mockResolvedValue({ data: { user: { id: 'admin' } }, error: null })
