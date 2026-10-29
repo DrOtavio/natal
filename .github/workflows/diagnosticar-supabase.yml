@@ -19,12 +19,12 @@ jobs:
           ORIGIN="https://natal-familia-oliveira.pages.dev"
 
           echo "=== 1. Teste CORS (OPTIONS) ==="
-          status=$(curl -sS --connect-timeout 10 --max-time 20 -o /tmp/options-body -D /tmp/options-headers -w '%{http_code}' \
+          option_status=$(curl -sS --connect-timeout 10 --max-time 20 -o /tmp/options-body -D /tmp/options-headers -w '%{http_code}' \
             -X OPTIONS "$ENDPOINT" \
             -H "Origin: $ORIGIN" \
             -H "Access-Control-Request-Method: POST" \
             -H "Access-Control-Request-Headers: authorization,apikey,content-type,x-client-info")
-          echo "HTTP OPTIONS: $status (esperado: 204)"
+          echo "HTTP OPTIONS: $option_status (esperado: 204)"
           grep -i '^access-control-allow-origin:' /tmp/options-headers || true
           if [ -s /tmp/options-body ]; then
             echo "Resposta OPTIONS:"
@@ -43,6 +43,10 @@ jobs:
           echo "Resposta publica:"
           head -c 1500 /tmp/post-body
           echo
+          if [ "$option_status" != "204" ]; then
+            echo "::error::O preflight CORS falhou. Verifique ALLOWED_ORIGINS e logs da funcao."
+            exit 1
+          fi
           if [ "$status" != "200" ]; then
             echo "::error::A API nao retornou HTTP 200. Verifique a funcao christmas-api, seus logs e ALLOWED_ORIGINS."
             exit 1
