@@ -1,0 +1,53 @@
+name: Gerar site para Cloudflare Pages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Compilar e empacotar dist
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VITE_SUPABASE_URL: https://eekiaggyowywtzbgdhbm.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+
+    steps:
+      - name: Baixar codigo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Verificar chave publica
+        shell: bash
+        run: |
+          if [ -z "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "::error::Crie o secret SUPABASE_PUBLISHABLE_KEY em Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Executar testes
+        run: npm test
+
+      - name: Gerar dist
+        run: npm run build
+
+      - name: Disponibilizar pacote para upload manual
+        uses: actions/upload-artifact@v4
+        with:
+          name: natal-oliveira-cloudflare
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
