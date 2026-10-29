@@ -172,6 +172,35 @@ describe('migração e transações PostgreSQL', () => {
     })
   })
 
+  it('reset v2 devolve JSON confirmado e mantém os inscritos ao refazer sorteio', async () => {
+    await seed()
+    await db.query('select public.complete_draw($1::jsonb)', [JSON.stringify(assignments)])
+    const result = await db.query<{ status: { ok: boolean; mode: string; assignmentsRemoved: number; participantsRemoved: number } }>(
+      "select public.admin_reset_event_v2('draw', 'REINICIAR') as status"
+    )
+    expect(result.rows[0].status).toEqual({ ok: true, mode: 'draw', assignmentsRemoved: 2, participantsRemoved: 0 })
+    expect((await db.query<{ count: number }>('select count(*)::integer as count from public.participants')).rows[0].count).toBe(2)
+    expect((await db.query<{ count: number }>('select count(*)::integer as count from public.assignments')).rows[0].count).toBe(0)
+  })
+
+  it('reset v2 só apaga todos com confirmação e mantém isolamento por roles', async () => {
+    await seed()
+    await db.query('select public.complete_draw($1::jsonb)', [JSON.stringify(assignments)])
+    await expect(db.query("select public.admin_reset_event_v2('all', 'ERRADO')")).rejects.toMatchObject({ code: '22023' })
+    expect((await db.query<{ count: number }>('select count(*)::integer as count from public.participants')).rows[0].count).toBe(2)
+    const result = await db.query<{ status: { ok: boolean; mode: string; assignmentsRemoved: number; participantsRemoved: number } }>(
+      "select public.admin_reset_event_v2('all', 'REINICIAR') as status"
+    )
+    expect(result.rows[0].status).toEqual({ ok: true, mode: 'all', assignmentsRemoved: 2, participantsRemoved: 2 })
+    expect((await db.query<{ count: number }>('select count(*)::integer as count from public.participants')).rows[0].count).toBe(0)
+    for (const role of ['anon', 'authenticated']) {
+      await db.exec(`set role ${role}`)
+      try {
+        await expect(db.query("select public.admin_reset_event_v2('draw', 'REINICIAR')")).rejects.toMatchObject({ code: '42501' })
+      } finally { await db.exec('reset role') }
+    }
+  })
+
   it('migração de reset é idempotente e indisponível aos clientes públicos', async () => {
     await db.exec(migrations[1])
     for (const role of ['anon', 'authenticated']) {
