@@ -175,6 +175,7 @@ function Dashboard() {
       const result = await api.restoreLinks(tokens)
       setLinks((current) => [...new Map([...current, ...result.links].map((link) => [link.id, link])).values()])
       await refresh()
+      if (result.skipped > 0) setError(`${result.skipped} link(s) do arquivo já foram substituídos. Os outros convites foram carregados; reemita somente os que faltam.`)
     } catch (err) { setError(errorMessage(err)) }
     finally { setBusy(false) }
   }
