@@ -79,6 +79,22 @@ describe('fronteiras da API', () => {
     expect(ctx.rpc).toHaveBeenCalledWith('reset_christmas_event', { p_mode: mode, p_confirmation: 'REINICIAR' })
   })
 
+  it('informa migração ausente quando o reset tenta usar uma RPC não instalada', async () => {
+    const ctx = setup()
+    ctx.auth.getUser.mockResolvedValue({ data: { user: { id: 'admin' } }, error: null })
+    ctx.from.mockReturnValue({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { user_id: 'admin' }, error: null }) }) }) })
+    ctx.rpc.mockResolvedValue({ data: null, error: { code: 'PGRST202', message: 'function not found' } })
+    const response = await ctx.handle(post(
+      { action: 'reset-event', mode: 'draw', confirmation: 'REINICIAR' },
+      { Authorization: 'Bearer admin' },
+    ))
+    expect(response.status).toBe(503)
+    expect((await response.json()).error).toContain('migrações do Supabase')
+    expect(ctx.rpc).toHaveBeenCalledWith('reset_christmas_event', {
+      p_mode: 'draw', p_confirmation: 'REINICIAR',
+    })
+  })
+
   it('rejeita origem não permitida antes de acessar o banco', async () => {
     const ctx = setup()
     const response = await ctx.handle(post({ action: 'register' }, { Origin: 'https://other.example.com' }))
