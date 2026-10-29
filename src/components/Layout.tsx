@@ -9,8 +9,8 @@ export function Layout() {
       <header className="site-header">
         <div className="page-shell header-inner">
           <Link to="/" className="brand-link" aria-label="Natal da Família Oliveira, início">
-            <img src="/logo-natal-familia-oliveira.webp" width="1254" height="1254" alt="Natal da Família Oliveira" className="brand-logo" fetchPriority="high" decoding="async" />
-            <span className="brand-name" aria-hidden="true"><span>Natal da</span><strong>Família Oliveira</strong></span>
+            <span className="brand-mark"><img src="/logo-natal-familia-oliveira.webp" width="1254" height="1254" alt="" className="brand-logo" decoding="async" /></span>
+            <span className="brand-name" aria-hidden="true"><span>Nosso Natal</span><strong>Família Oliveira</strong></span>
           </Link>
           <nav className="header-nav" aria-label="Principal">
             <a href="/#como-funciona" className="nav-link">Como funciona</a>
