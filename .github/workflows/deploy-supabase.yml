@@ -7,6 +7,7 @@ on:
       - 'supabase/functions/**'
       - 'supabase/migrations/20261029020000_whatsapp_participants.sql'
       - '.github/scripts/apply-whatsapp-migration.mjs'
+      - '.github/scripts/check-christmas-api.mjs'
       - '.github/workflows/deploy-supabase.yml'
   workflow_dispatch:
 
@@ -60,3 +61,6 @@ jobs:
 
       - name: Listar funcoes publicadas
         run: npx --yes supabase@2.122.0 functions list --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Verificar estado publico e bloqueio das operacoes privadas
+        run: node .github/scripts/check-christmas-api.mjs
